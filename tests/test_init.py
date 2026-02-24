@@ -1,6 +1,7 @@
 """Test Owlet init."""
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
 from pyowletapi.exceptions import (
@@ -14,13 +15,21 @@ from homeassistant.components.owlet.const import (
     CONF_OWLET_EXPIRY,
     CONF_OWLET_REFRESH,
     DOMAIN,
+    POLLING_INTERVAL,
 )
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.const import CONF_API_TOKEN, CONF_REGION, CONF_USERNAME, Platform
+from homeassistant.const import (
+    CONF_API_TOKEN,
+    CONF_REGION,
+    CONF_SCAN_INTERVAL,
+    CONF_USERNAME,
+    Platform,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 
 from . import async_init_integration
+from tests.common import MockConfigEntry, load_fixture
 
 PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR]
 
@@ -134,3 +143,38 @@ async def test_async_setup_entry_error(hass: HomeAssistant) -> None:
         assert entry.state == ConfigEntryState.SETUP_ERROR
 
         await entry.async_unload(hass)
+
+
+async def test_migrate_entry_v1_to_v2(hass: HomeAssistant) -> None:
+    """Test migration from v1 (email-only unique_id) to v2 (region_email)."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        version=1,
+        title="sample@gmail.com",
+        unique_id="sample@gmail.com",
+        data={
+            CONF_REGION: "europe",
+            CONF_USERNAME: "sample@gmail.com",
+            CONF_API_TOKEN: "api_token",
+            CONF_OWLET_EXPIRY: 100,
+            CONF_OWLET_REFRESH: "refresh_token",
+        },
+        options={CONF_SCAN_INTERVAL: POLLING_INTERVAL},
+    )
+
+    entry.add_to_hass(hass)
+
+    with patch(
+        "homeassistant.components.owlet.OwletAPI.get_properties",
+        return_value={},
+    ), patch(
+        "homeassistant.components.owlet.OwletAPI.authenticate", return_value=None
+    ), patch(
+        "homeassistant.components.owlet.OwletAPI.get_devices",
+        return_value=json.loads(load_fixture("get_devices.json", "owlet")),
+    ):
+        await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.version == 2
+    assert entry.unique_id == "europe_sample@gmail.com"

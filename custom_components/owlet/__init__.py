@@ -35,6 +35,33 @@ PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.S
 _LOGGER = logging.getLogger(__name__)
 
 
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+    """Migrate old entry to new format."""
+    _LOGGER.debug(
+        "Migrating configuration from version %s.%s",
+        config_entry.version,
+        config_entry.minor_version,
+    )
+
+    if config_entry.version == 1:
+        # Version 1 used email-only unique_id, version 2 includes region prefix
+        region = config_entry.data.get(CONF_REGION, "world")
+        old_unique_id = config_entry.unique_id
+        new_unique_id = f"{region}_{old_unique_id}"
+
+        hass.config_entries.async_update_entry(
+            config_entry, unique_id=new_unique_id, version=2
+        )
+
+        _LOGGER.debug(
+            "Migration to version 2 successful: unique_id %s -> %s",
+            old_unique_id,
+            new_unique_id,
+        )
+
+    return True
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up Owlet Smart Sock from a config entry."""
     hass.data.setdefault(DOMAIN, {})
