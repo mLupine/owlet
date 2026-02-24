@@ -18,7 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from . import async_init_integration
-from .const import AUTH_RETURN, CONF_INPUT
+from .const import AUTH_RETURN, CONF_INPUT, CONF_INPUT_WORLD
 
 
 async def test_form(hass: HomeAssistant) -> None:
@@ -215,6 +215,79 @@ async def test_reauth_unknown_error(hass: HomeAssistant) -> None:
 
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "reauth_confirm"
+
+
+async def test_flow_same_email_different_region(hass: HomeAssistant) -> None:
+    """Test that the same email can be added for different regions."""
+    # Create first entry for europe region
+    with patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        return_value=AUTH_RETURN,
+    ), patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=CONF_INPUT,
+        )
+        await hass.async_block_till_done()
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+
+    # Create second entry for world region with same email
+    with patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        return_value=AUTH_RETURN,
+    ), patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=CONF_INPUT_WORLD,
+        )
+        await hass.async_block_till_done()
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+        assert result["data"]["region"] == "world"
+
+
+async def test_flow_duplicate_region_and_email(hass: HomeAssistant) -> None:
+    """Test that duplicate email + region is still blocked."""
+    # Create first entry for europe region
+    with patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        return_value=AUTH_RETURN,
+    ), patch(
+        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=CONF_INPUT,
+        )
+        await hass.async_block_till_done()
+
+        assert result["type"] == FlowResultType.CREATE_ENTRY
+
+    # Try to create duplicate entry for same region + email
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input=CONF_INPUT,
+    )
+
+    assert result["type"] == FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
 
 
 async def test_options_flow(hass: HomeAssistant) -> None:

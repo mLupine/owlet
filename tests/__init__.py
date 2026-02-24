@@ -30,8 +30,9 @@ async def async_init_integration(
     """Set up integration entry."""
     entry = MockConfigEntry(
         domain=DOMAIN,
+        version=2,
         title="sample@gmail.com",
-        unique_id="sample@gmail.com",
+        unique_id="europe_sample@gmail.com",
         data={
             CONF_REGION: "europe",
             CONF_USERNAME: "sample@gmail.com",

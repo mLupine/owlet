@@ -12,3 +12,9 @@ CONF_INPUT = {
     "username": "sample@gmail.com",
     "password": "sample",
 }
+
+CONF_INPUT_WORLD = {
+    "region": "world",
+    "username": "sample@gmail.com",
+    "password": "sample",
+}

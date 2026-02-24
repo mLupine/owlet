@@ -42,7 +42,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Owlet Smart Sock."""
 
-    VERSION = 1
+    VERSION = 2
     reauth_entry: ConfigEntry | None = None
 
     def __init__(self) -> None:
@@ -61,7 +61,9 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 session=async_get_clientsession(self.hass),
             )
 
-            await self.async_set_unique_id(user_input[CONF_USERNAME].lower())
+            await self.async_set_unique_id(
+                f"{user_input[CONF_REGION]}_{user_input[CONF_USERNAME].lower()}"
+            )
             self._abort_if_unique_id_configured()
 
             try:
