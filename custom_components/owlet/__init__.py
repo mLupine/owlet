@@ -105,20 +105,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             store_tokens(hass, entry, api.tokens)
         if not setup_complete:
             for coordinator in coordinators.values():
-                coordinator.shutdown()
-                await coordinator.async_stop_body_position()
+                await coordinator.async_close()
             if api is not None:
                 await api.close()
     hass.data[DOMAIN][entry.entry_id] = coordinators
-    entry.async_on_unload(entry.add_update_listener(async_update_options))
 
     @callback
     def stop_coordinators():
         for coordinator in coordinators.values():
             coordinator.shutdown()
 
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except BaseException:
+        for coordinator in coordinators.values():
+            await coordinator.async_close()
+        await api.close()
+        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        raise
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
     entry.async_on_unload(stop_coordinators)
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     for coordinator in coordinators.values():
         coordinator.configure_body_position()
     return True
@@ -135,8 +142,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         return False
     coordinators = hass.data[DOMAIN].pop(entry.entry_id, {})
     for coordinator in coordinators.values():
-        coordinator.shutdown()
-        await coordinator.async_stop_body_position()
+        await coordinator.async_close()
     if coordinators:
         await next(iter(coordinators.values())).sock.api.close()
     return True

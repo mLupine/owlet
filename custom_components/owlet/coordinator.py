@@ -1,5 +1,6 @@
 """Polling, credential persistence and source-specific freshness."""
 
+import asyncio
 import logging
 import math
 from datetime import datetime, timedelta
@@ -67,6 +68,8 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self.sock = sock
         self.entry = entry
         self._cancel_expiry = None
+        self._stopped = False
+        self._in_flight = None
         self._failure_count = 0
         self.successful_polls = 0
         self._options = None
@@ -105,7 +108,7 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self.update_interval = timedelta(seconds=self.base_interval)
 
     async def async_apply_options(self) -> None:
-        if self._options == dict(self.entry.options):
+        if self._stopped or self._options == dict(self.entry.options):
             return
         self._set_options()
         self._schedule_expiry()
@@ -249,6 +252,15 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self._schedule_expiry()
 
     async def _async_update_data(self) -> None:
+        if self._stopped:
+            return
+        self._in_flight = asyncio.current_task()
+        try:
+            await self._async_poll()
+        finally:
+            self._in_flight = None
+
+    async def _async_poll(self) -> None:
         try:
             await self.sock.update_properties()
         except (OwletAuthenticationError, OwletCredentialsError):
@@ -266,6 +278,8 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
             raise UpdateFailed("Unable to update Owlet readings") from None
         finally:
             store_tokens(self.hass, self.entry, self.sock.api.tokens)
+        if self._stopped:
+            return
         self._failure_count = 0
         self.successful_polls += 1
         enabled = (
@@ -279,6 +293,8 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self._schedule_expiry()
 
     def configure_body_position(self) -> None:
+        if self._stopped:
+            return
         enabled = (
             self.entry.options.get(CONF_BODY_POSITION) is True
             and self.sock.version == 3
@@ -307,12 +323,21 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
             await self.body_position.async_close()
         if self._body_task:
             self._body_task.cancel()
-            import asyncio
-
             await asyncio.gather(self._body_task, return_exceptions=True)
+
+    async def async_close(self) -> None:
+        task = self._in_flight
+        self.shutdown()
+        if task and task is not asyncio.current_task():
+            await asyncio.gather(task, return_exceptions=True)
+        await self.async_stop_body_position()
 
     @callback
     def shutdown(self) -> None:
+        self._stopped = True
+        if self._in_flight and self._in_flight is not asyncio.current_task():
+            self._in_flight.cancel()
+        self._unschedule_refresh()
         if self._cancel_expiry:
             self._cancel_expiry()
             self._cancel_expiry = None

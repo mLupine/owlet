@@ -1,0 +1,3 @@
+ts	phase	decision	why	evidence	result
+2026-11-07T19:21:25Z	frame	Audited all 24 actual issues before implementation	Existing fixes need proof; prioritize unproved account retry and lifecycle contracts	docs/roadmap-coverage.md; dbe6f6c; /tmp/owlet-roadmap-comments-*.json	Baseline current suite 181 passed; no live HA access
+2026-11-07T19:23:02Z	lifecycle	Stop and join in-flight polls and clean failed platform forwarding	Event-driven HA tests reproduced late repairs and retained runtime; L4 service cancellation already propagated correctly	tests/test_roadmap_lifecycle.py; tests/test_review_regressions.py	68 lifecycle and related regressions passed on HA2026.10.2
