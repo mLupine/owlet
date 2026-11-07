@@ -164,7 +164,7 @@ async def test_battery_transition_is_exposed_without_smoothing(hass, cloud, vers
     cloud[1].return_value = {
         "response": [{"device": {"dsn": name}} for name in ("unit-one", "unit-two")]
     }
-    cloud[2].return_value = {"response": raw_v3() if version == 3 else raw_v2()}
+    cloud[2].return_value = {"response": raw_v3(btt=40) if version == 3 else raw_v2()}
     entry = create_entry(hass)
     coordinator = await setup_entry(hass, entry)
     registry_ids = {key: value.id for key, value in er.async_get(hass).entities.items()}
@@ -175,6 +175,10 @@ async def test_battery_transition_is_exposed_without_smoothing(hass, cloud, vers
             raw["BATT_LEVEL"]["value"] = percentage
         cloud[2].return_value = {"response": raw}
         await coordinator.async_refresh()
+        if version == 3:
+            assert entity_state(hass, "sensor", "battery_minutes").state == (
+                "40.0" if charging == 0 else "unavailable"
+            )
         assert (
             float(entity_state(hass, "sensor", "battery_percentage").state)
             == percentage
@@ -216,6 +220,8 @@ async def test_inventory_reload_preserves_absent_returning_disabled_and_renamed_
     await hass.async_block_till_done()
     assert registry.async_get(custom.entity_id).id == original.id
     assert entity_state(hass, "sensor", "heart_rate", "unit-two") is None
+    primary = registry.async_get(entity_state(hass, "sensor", "heart_rate").entity_id)
+    assert dr.async_get(hass).async_get(primary.device_id).sw_version == "new"
     cloud[1].return_value = {
         "response": [
             {"device": {"dsn": name}} for name in ("unit-one", "unit-two", "unit-three")

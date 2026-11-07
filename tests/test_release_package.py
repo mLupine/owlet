@@ -7,6 +7,7 @@ from zipfile import ZipFile
 import pytest
 
 from scripts.build_release import (
+    EXAMPLE_FILES,
     ROOT,
     build_release,
     component_files,
@@ -43,11 +44,13 @@ def test_packages_are_identical_across_builds_and_match_source(candidate):
         assert b"Ryan" in archive.read("NOTICE")
 
 
-@pytest.mark.parametrize("change", ["extra", "missing", "symlink"])
+@pytest.mark.parametrize("change", ["extra", "extra-example", "missing", "symlink"])
 def test_package_refuses_unreviewed_inventory(candidate, change):
     component = candidate / "custom_components/owlet"
     if change == "extra":
         (component / "household-secret.json").write_text("synthetic")
+    elif change == "extra-example":
+        (candidate / "dashboards/household.yaml").write_text("synthetic")
     elif change == "missing":
         (component / "brand/icon.png").unlink()
     else:
@@ -92,6 +95,8 @@ def test_source_zip_installation_bytes_match_candidate(candidate, changed):
             archive.writestr(
                 f"owlet-candidate/custom_components/owlet/{name}", path.read_bytes()
             )
+        for name in EXAMPLE_FILES:
+            archive.writestr(f"owlet-candidate/{name}", (candidate / name).read_bytes())
         archive.writestr("owlet-candidate/tests/household-excluded.json", "synthetic")
     if changed:
         (component / "const.py").write_text("different source")

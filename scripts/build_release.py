@@ -44,6 +44,16 @@ COMPONENT_FILES = frozenset(
     )
 )
 
+EXAMPLE_FILES = frozenset(
+    {
+        "NOTICE",
+        "blueprints/automation/owlet/owlet_alert_notification.yaml",
+        "blueprints/automation/owlet/owlet_stale_data_notification.yaml",
+        "dashboards/owlet.yaml",
+        "dashboards/owlet_nl.yaml",
+    }
+)
+
 
 def write_archive(destination: Path, files: list[tuple[Path, str]]) -> str:
     with ZipFile(destination, "w", compression=ZIP_DEFLATED) as archive:
@@ -85,19 +95,39 @@ def validate_manifest(component: Path, tag: str | None = None) -> dict:
 
 def verify_source_archive(source: Path, component: Path) -> None:
     """Compare a GitHub-style source ZIP's installed files with the candidate."""
-    expected = {name: path.read_bytes() for path, name in component_files(component)}
+    expected = {
+        f"custom_components/owlet/{name}": path.read_bytes()
+        for path, name in component_files(component)
+    }
+    expected.update(
+        {name: (component.parents[1] / name).read_bytes() for name in EXAMPLE_FILES}
+    )
     marker = "custom_components/owlet/"
     with ZipFile(source) as archive:
+        prefixes = {
+            info.filename.split(marker, 1)[0]
+            for info in archive.infolist()
+            if not info.is_dir() and marker in info.filename
+        }
+        if len(prefixes) != 1:
+            raise ValueError("Ambiguous source archive root")
+        prefix = prefixes.pop()
         actual = {}
         for info in archive.infolist():
-            if info.is_dir() or marker not in info.filename:
+            if info.is_dir() or not info.filename.startswith(prefix):
                 continue
-            name = info.filename.split(marker, 1)[1]
+            name = info.filename.removeprefix(prefix)
+            if name not in expected and not name.startswith(
+                (marker, "blueprints/", "dashboards/")
+            ):
+                continue
             if name in actual:
                 raise ValueError("Duplicate source archive member")
             actual[name] = archive.read(info)
         if actual != expected:
-            raise ValueError("Source archive differs from candidate component")
+            raise ValueError(
+                "Source archive differs from candidate component or examples"
+            )
 
 
 def build_release(
@@ -124,6 +154,10 @@ def build_release(
         for path in (root / folder).rglob("*.yaml")
     ]
     examples.append((root / "NOTICE", "NOTICE"))
+    if {name for _, name in examples} != EXAMPLE_FILES or any(
+        path.is_symlink() for path, _ in examples
+    ):
+        raise ValueError("Unexpected example inventory")
     example_hash = write_archive(destination / "owlet-examples.zip", examples)
     (destination / "SHA256SUMS").write_text(
         f"{package_hash}  owlet.zip\n{example_hash}  owlet-examples.zip\n"

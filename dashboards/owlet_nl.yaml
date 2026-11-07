@@ -1,29 +1,6 @@
-# Owlet Smart Sock dashboard for Home Assistant, Dutch version.
-#
-# Two views: "Baby" (live values with trend graphs, sock status, Owlet alerts)
-# and "Trends" (last 12 hours, sleep, skin temperature, daily statistics,
-# battery). Uses built-in cards only, no custom cards needed.
-#
-# The entity ids match a Home Assistant set to Dutch, where entity ids are
-# generated from the Dutch entity names (for example "_hartslag"). For an
-# English installation use owlet.yaml instead.
-#
-# Install:
-#   1. Settings > Dashboards > Add dashboard > New dashboard from scratch.
-#   2. Open it, pencil (Edit dashboard) > three dots > Raw configuration editor.
-#   3. Paste this file and replace every "owlet_sock_serial_number" with the
-#      entity id prefix of your sock, for example "slaapkamer_owlet_sok" when
-#      your heart rate entity is sensor.slaapkamer_owlet_sok_hartslag.
-#
-# This is not a medical device. Data is polled from the Owlet cloud and can be
-# delayed or stop without warning. Keep the Owlet base station and app as your
-# primary alert.
 title: Owlet
 
 views:
-  # ============================================================
-  # VIEW 1: LIVE
-  # ============================================================
   - title: Baby
     path: baby
     icon: mdi:baby-face-outline
@@ -32,9 +9,6 @@ views:
 
     sections:
 
-      # ========================================================
-      # HERO / LIVE
-      # ========================================================
       - type: grid
         cards:
           - type: heading
@@ -59,7 +33,6 @@ views:
                 show_state: true
                 color: state
 
-          # Verouderde gegevens: enkel zichtbaar wanneer de cloud geen nieuwe meting stuurt
           - type: markdown
             content: >-
               {% if not has_value('binary_sensor.owlet_sock_serial_number_verouderde_gegevens') %}
@@ -87,7 +60,6 @@ views:
             grid_options:
               columns: full
 
-          # HARTSLAG
           - type: tile
             entity: sensor.owlet_sock_serial_number_hartslag
             name: Hartslag
@@ -99,7 +71,6 @@ views:
                 hours_to_show: 6
                 detail: true
 
-          # ZUURSTOF
           - type: tile
             entity: sensor.owlet_sock_serial_number_o2_saturatie
             name: Zuurstof
@@ -111,23 +82,18 @@ views:
                 hours_to_show: 6
                 detail: true
 
-          # SLAAPTOESTAND
           - type: tile
             entity: sensor.owlet_sock_serial_number_slaaptoestand
             name: Slaap
             icon: mdi:sleep
             color: purple
 
-          # 10 MIN O2 GEMIDDELDE
           - type: tile
             entity: sensor.owlet_sock_serial_number_o2_saturatie_gemiddelde_10_minuten
             name: O₂ gemiddelde
             icon: mdi:chart-timeline-variant
             color: light-blue
 
-      # ========================================================
-      # COMFORT
-      # ========================================================
       - type: grid
         cards:
           - type: heading
@@ -151,9 +117,6 @@ views:
             icon: mdi:eye-outline
             color: amber
 
-      # ========================================================
-      # SOK / BATTERIJ
-      # ========================================================
       - type: grid
         cards:
           - type: heading
@@ -182,7 +145,6 @@ views:
             icon: mdi:timer-outline
             color: green
 
-          # Enkel zichtbaar tijdens opladen
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_opladen
             name: Sok wordt opgeladen
@@ -193,7 +155,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_opladen
                 state: "on"
 
-          # Enkel zichtbaar wanneer de sok uit is
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_sok_uit
             name: Sok is uit
@@ -205,16 +166,12 @@ views:
                 state: "on"
 
 
-      # ========================================================
-      # MELDINGEN
-      # ========================================================
       - type: grid
         cards:
           - type: heading
             heading: Meldingen
             icon: mdi:shield-check-outline
 
-          # Geen actieve meldingen
           - type: markdown
             content: >-
               {% set alerts = ['binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag', 'binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag', 'binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden', 'binary_sensor.owlet_sock_serial_number_alarm_stroomuitval', 'binary_sensor.owlet_sock_serial_number_alarm_lage_batterij', 'binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij'] %}
@@ -236,7 +193,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
                 state: "on"
 
-          # LAAG ZUURSTOFGEHALTE
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
             name: Laag zuurstofgehalte
@@ -247,7 +203,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
                 state: "on"
 
-          # HOOG ZUURSTOFGEHALTE
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
             name: Hoog zuurstofgehalte
@@ -258,7 +213,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
                 state: "on"
 
-          # HOGE HARTSLAG
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
             name: Hoge hartslag
@@ -269,7 +223,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
                 state: "on"
 
-          # LAGE HARTSLAG
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
             name: Lage hartslag
@@ -280,7 +233,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
                 state: "on"
 
-          # SOK NIET VERBONDEN
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
             name: Sok niet verbonden
@@ -291,7 +243,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
                 state: "on"
 
-          # STROOMUITVAL
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
             name: Stroomuitval
@@ -302,7 +253,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
                 state: "on"
 
-          # LAGE BATTERIJ
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
             name: Batterij bijna leeg
@@ -313,7 +263,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
                 state: "on"
 
-          # KRITIEKE BATTERIJ (enkel op socks die dit melden)
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij
             name: Batterij kritiek
@@ -325,9 +274,6 @@ views:
                 state: "on"
 
 
-  # ============================================================
-  # VIEW 2: TRENDS
-  # ============================================================
   - title: Historie
     path: trends
     icon: mdi:chart-line
@@ -336,9 +282,6 @@ views:
 
     sections:
 
-      # ========================================================
-      # VITALE WAARDEN
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
@@ -378,9 +321,6 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================
-      # SLAAP
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
@@ -401,9 +341,6 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================
-      # TEMPERATUUR
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
@@ -420,9 +357,6 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================
-      # PER DAG (langetermijnstatistieken)
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
@@ -454,9 +388,6 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================
-      # BATTERIJ
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
@@ -484,9 +415,6 @@ views:
             grid_options:
               columns: full
 
-      # ========================================================
-      # INFO
-      # ========================================================
       - type: grid
         column_span: 2
         cards:
