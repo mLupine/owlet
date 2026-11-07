@@ -1,29 +1,47 @@
 """Test Owlet config flow."""
+
 from __future__ import annotations
 
+import json
 from unittest.mock import patch
 
-from pyowletapi.exceptions import (
+import pytest
+from homeassistant import config_entries
+from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
+from homeassistant.const import CONF_PASSWORD, CONF_SCAN_INTERVAL
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
+
+from custom_components.owlet.const import DOMAIN, POLLING_INTERVAL
+from custom_components.owlet.owletapi.exceptions import (
     OwletCredentialsError,
     OwletDevicesError,
     OwletEmailError,
     OwletPasswordError,
 )
 
-from homeassistant import config_entries
-from homeassistant.components.owlet.const import DOMAIN, POLLING_INTERVAL
-from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_USER
-from homeassistant.const import CONF_PASSWORD, CONF_SCAN_INTERVAL
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
-
 from . import async_init_integration
 from .const import AUTH_RETURN, CONF_INPUT, CONF_INPUT_WORLD
+from .fixture_data import load_fixture
+
+
+@pytest.fixture(autouse=True)
+def flow_cloud_boundary():
+    with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.get_devices",
+            return_value=json.loads(load_fixture("get_devices.json")),
+        ),
+        patch(
+            "homeassistant.config_entries.ConfigEntries.async_setup", return_value=True
+        ),
+    ):
+        yield
 
 
 async def test_form(hass: HomeAssistant) -> None:
     """Test that the form is served with no input."""
-    # await async_init_integration(hass)
+
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
@@ -31,11 +49,12 @@ async def test_form(hass: HomeAssistant) -> None:
     assert result["type"] == FlowResultType.FORM
     assert result["step_id"] == "user"
 
-    with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
-        return_value=AUTH_RETURN,
-    ), patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+    with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.authenticate",
+            return_value=AUTH_RETURN,
+        ),
+        patch("custom_components.owlet.config_flow.OwletAPI.get_devices"),
     ):
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -58,7 +77,7 @@ async def test_form(hass: HomeAssistant) -> None:
 async def test_flow_wrong_password(hass: HomeAssistant) -> None:
     """Test incorrect login throwing error."""
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=OwletPasswordError(),
     ):
         result = await hass.config_entries.flow.async_init(
@@ -76,7 +95,7 @@ async def test_flow_wrong_password(hass: HomeAssistant) -> None:
 async def test_flow_wrong_email(hass: HomeAssistant) -> None:
     """Test incorrect login throwing error."""
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=OwletEmailError(),
     ):
         result = await hass.config_entries.flow.async_init(
@@ -94,7 +113,7 @@ async def test_flow_wrong_email(hass: HomeAssistant) -> None:
 async def test_flow_credentials_error(hass: HomeAssistant) -> None:
     """Test incorrect login throwing error."""
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=OwletCredentialsError(),
     ):
         result = await hass.config_entries.flow.async_init(
@@ -112,7 +131,7 @@ async def test_flow_credentials_error(hass: HomeAssistant) -> None:
 async def test_flow_unknown_error(hass: HomeAssistant) -> None:
     """Test unknown error throwing error."""
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=Exception(),
     ):
         result = await hass.config_entries.flow.async_init(
@@ -129,11 +148,12 @@ async def test_flow_unknown_error(hass: HomeAssistant) -> None:
 
 async def test_flow_no_devices(hass: HomeAssistant) -> None:
     """Test unknown error throwing error."""
-    with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate"
-    ), patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication",
-        side_effect=OwletDevicesError(),
+    with (
+        patch("custom_components.owlet.config_flow.OwletAPI.authenticate"),
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.get_devices",
+            side_effect=OwletDevicesError(),
+        ),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN,
@@ -160,7 +180,7 @@ async def test_reauth_success(hass: HomeAssistant) -> None:
     assert result["step_id"] == "reauth_confirm"
 
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         return_value=AUTH_RETURN,
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -184,7 +204,7 @@ async def test_reauth_invalid_password(hass: HomeAssistant) -> None:
     )
 
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=OwletPasswordError(),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -206,7 +226,7 @@ async def test_reauth_unknown_error(hass: HomeAssistant) -> None:
     )
 
     with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
+        "custom_components.owlet.config_flow.OwletAPI.authenticate",
         side_effect=Exception(),
     ):
         result = await hass.config_entries.flow.async_configure(
@@ -215,16 +235,18 @@ async def test_reauth_unknown_error(hass: HomeAssistant) -> None:
 
         assert result["type"] == FlowResultType.FORM
         assert result["step_id"] == "reauth_confirm"
+        assert result["errors"] == {"base": "unknown"}
 
 
 async def test_flow_same_email_different_region(hass: HomeAssistant) -> None:
     """Test that the same email can be added for different regions."""
-    # Create first entry for europe region
-    with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
-        return_value=AUTH_RETURN,
-    ), patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+
+    with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.authenticate",
+            return_value=AUTH_RETURN,
+        ),
+        patch("custom_components.owlet.config_flow.OwletAPI.get_devices"),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -237,12 +259,12 @@ async def test_flow_same_email_different_region(hass: HomeAssistant) -> None:
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
 
-    # Create second entry for world region with same email
-    with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
-        return_value=AUTH_RETURN,
-    ), patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+    with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.authenticate",
+            return_value=AUTH_RETURN,
+        ),
+        patch("custom_components.owlet.config_flow.OwletAPI.get_devices"),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -259,12 +281,13 @@ async def test_flow_same_email_different_region(hass: HomeAssistant) -> None:
 
 async def test_flow_duplicate_region_and_email(hass: HomeAssistant) -> None:
     """Test that duplicate email + region is still blocked."""
-    # Create first entry for europe region
-    with patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.authenticate",
-        return_value=AUTH_RETURN,
-    ), patch(
-        "homeassistant.components.owlet.config_flow.OwletAPI.validate_authentication"
+
+    with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.authenticate",
+            return_value=AUTH_RETURN,
+        ),
+        patch("custom_components.owlet.config_flow.OwletAPI.get_devices"),
     ):
         result = await hass.config_entries.flow.async_init(
             DOMAIN, context={"source": SOURCE_USER}
@@ -277,7 +300,6 @@ async def test_flow_duplicate_region_and_email(hass: HomeAssistant) -> None:
 
         assert result["type"] == FlowResultType.CREATE_ENTRY
 
-    # Try to create duplicate entry for same region + email
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": SOURCE_USER}
     )
@@ -307,4 +329,66 @@ async def test_options_flow(hass: HomeAssistant) -> None:
 
     assert result["type"] == FlowResultType.CREATE_ENTRY
     assert result["title"] == ""
-    assert result["data"] == {CONF_SCAN_INTERVAL: 10}
+    assert result["data"] == {
+        CONF_SCAN_INTERVAL: 10,
+        "stale_threshold": 0,
+        "activation_interval": 30,
+        "body_position": False,
+    }
+
+
+async def test_legacy_v2_whitespace_identity_blocks_normalized_duplicate(hass):
+    from .test_superintegration import create_entry
+
+    entry = create_entry(
+        hass,
+        unique_id="europe_ parent@example.invalid ",
+        username=" Parent@Example.invalid ",
+    )
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": SOURCE_USER}
+    )
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "region": "europe",
+            "username": "parent@example.invalid",
+            "password": "pass",
+        },
+    )
+    assert (
+        result["type"] == FlowResultType.ABORT
+        and result["reason"] == "already_configured"
+    )
+    assert entry.unique_id == "europe_ parent@example.invalid "
+
+
+async def test_reconfigure_region_updates_in_place(hass):
+    from .test_superintegration import create_entry
+
+    entry = create_entry(hass, options={"scan_interval": 17, "custom": "kept"})
+    before_id = entry.entry_id
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN, context={"source": "reconfigure", "entry_id": entry.entry_id}
+    )
+    with (
+        patch(
+            "custom_components.owlet.config_flow.authenticate_account",
+            return_value=(AUTH_RETURN, {}),
+        ),
+        patch.object(hass.config_entries, "async_reload", return_value=True) as reload,
+    ):
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"], user_input={"region": "world", "password": "pass"}
+        )
+    assert result["reason"] == "reconfigure_successful"
+    assert (
+        entry.entry_id == before_id
+        and entry.unique_id == "world_parent@example.invalid"
+    )
+    assert (
+        entry.data["region"] == "world"
+        and entry.data["username"] == "parent@example.invalid"
+    )
+    assert entry.options == {"scan_interval": 17, "custom": "kept"}
+    reload.assert_awaited_once_with(entry.entry_id)

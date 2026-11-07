@@ -1,9 +1,11 @@
 """Test Owlet Sensor."""
+
 from __future__ import annotations
 
 from homeassistant.core import HomeAssistant
 
 from . import async_init_integration
+from .test_superintegration import entity_state
 
 
 async def test_sensors_asleep(hass: HomeAssistant) -> None:
@@ -12,43 +14,50 @@ async def test_sensors_asleep(hass: HomeAssistant) -> None:
         hass, properties_fixture="update_properties_asleep.json"
     )
 
-    assert len(hass.states.async_all("binary_sensor")) == 10
+    assert len(hass.states.async_all("binary_sensor")) == 17
 
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_charging").state == "off"
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_high_heart_rate_alert"
+        entity_state(hass, "binary_sensor", "charging", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(
+            hass, "binary_sensor", "high_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
     assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_heart_rate_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_high_oxygen_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_oxygen_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_battery_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_lost_power_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_sock_disconnected_alert"
+        entity_state(
+            hass, "binary_sensor", "low_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_sock_off").state == "off"
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_awake").state == "off"
+    assert (
+        entity_state(hass, "binary_sensor", "high_oxygen_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_oxygen_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_battery_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "lost_power_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_disconnected", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_off", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sleep_state", "SERIAL_NUMBER").state
+        == "off"
+    )
 
 
 async def test_sensors_awake(hass: HomeAssistant) -> None:
@@ -57,43 +66,50 @@ async def test_sensors_awake(hass: HomeAssistant) -> None:
         hass, properties_fixture="update_properties_awake.json"
     )
 
-    assert len(hass.states.async_all("binary_sensor")) == 10
+    assert len(hass.states.async_all("binary_sensor")) == 17
 
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_charging").state == "off"
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_high_heart_rate_alert"
+        entity_state(hass, "binary_sensor", "charging", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(
+            hass, "binary_sensor", "high_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "on"
     )
     assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_heart_rate_alert").state
-        == "on"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_high_oxygen_alert").state
-        == "on"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_oxygen_alert").state
-        == "on"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_battery_alert").state
-        == "on"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_lost_power_alert").state
-        == "on"
-    )
-    assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_sock_disconnected_alert"
+        entity_state(
+            hass, "binary_sensor", "low_heart_rate_alert", "SERIAL_NUMBER"
         ).state
+        == "on"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "high_oxygen_alert", "SERIAL_NUMBER").state
+        == "on"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_oxygen_alert", "SERIAL_NUMBER").state
+        == "on"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_battery_alert", "SERIAL_NUMBER").state
+        == "on"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "lost_power_alert", "SERIAL_NUMBER").state
+        == "on"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_disconnected", "SERIAL_NUMBER").state
         == "off"
     )
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_sock_off").state == "off"
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_awake").state == "on"
+    assert (
+        entity_state(hass, "binary_sensor", "sock_off", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sleep_state", "SERIAL_NUMBER").state
+        == "on"
+    )
 
 
 async def test_sensors_charging(hass: HomeAssistant) -> None:
@@ -102,87 +118,96 @@ async def test_sensors_charging(hass: HomeAssistant) -> None:
         hass, properties_fixture="update_properties_charging.json"
     )
 
-    assert len(hass.states.async_all("binary_sensor")) == 10
+    assert len(hass.states.async_all("binary_sensor")) == 17
 
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_charging").state == "on"
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_high_heart_rate_alert"
+        entity_state(hass, "binary_sensor", "charging", "SERIAL_NUMBER").state == "on"
+    )
+    assert (
+        entity_state(
+            hass, "binary_sensor", "high_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
     assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_heart_rate_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_high_oxygen_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_oxygen_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_battery_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_lost_power_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_sock_disconnected_alert"
+        entity_state(
+            hass, "binary_sensor", "low_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_sock_off").state == "off"
     assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_awake").state == "unknown"
+        entity_state(hass, "binary_sensor", "high_oxygen_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_oxygen_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_battery_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "lost_power_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_disconnected", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_off", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sleep_state", "SERIAL_NUMBER").state
+        == "unavailable"
     )
 
 
 async def test_sensors_v2(hass: HomeAssistant) -> None:
     """Test sensor values."""
     await async_init_integration(hass, properties_fixture="update_properties_v2.json")
-    assert len(hass.states.async_all("binary_sensor")) == 9
+    assert len(hass.states.async_all("binary_sensor")) == 11
 
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_charging").state == "off"
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_high_heart_rate_alert"
+        entity_state(hass, "binary_sensor", "charging", "SERIAL_NUMBER").state == "off"
+    )
+    assert (
+        entity_state(
+            hass, "binary_sensor", "high_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
     assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_heart_rate_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_oxygen_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get("binary_sensor.owlet_baby_care_sock_low_battery_alert").state
-        == "off"
-    )
-    assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_critical_battery_alert"
+        entity_state(
+            hass, "binary_sensor", "low_heart_rate_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_critical_oxygen_alert"
+        entity_state(hass, "binary_sensor", "low_oxygen_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "low_battery_alert", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(
+            hass, "binary_sensor", "critical_battery_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
     assert (
-        hass.states.get(
-            "binary_sensor.owlet_baby_care_sock_sock_disconnected_alert"
+        entity_state(
+            hass, "binary_sensor", "critical_oxygen_alert", "SERIAL_NUMBER"
         ).state
         == "off"
     )
-    assert hass.states.get("binary_sensor.owlet_baby_care_sock_sock_off").state == "off"
+    assert (
+        entity_state(hass, "binary_sensor", "sock_disconnected", "SERIAL_NUMBER").state
+        == "off"
+    )
+    assert (
+        entity_state(hass, "binary_sensor", "sock_off", "SERIAL_NUMBER").state == "off"
+    )

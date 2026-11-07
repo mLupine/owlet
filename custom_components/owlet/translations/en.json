@@ -1,123 +1,218 @@
 {
-    "config": {
-        "abort": {
-            "already_configured": "Device already configured",
-            "reauth_successful": "Reauthentication successful"
-        },
-        "error": {
-            "cannot_connect": "Failed to connect",
-            "invalid_credentials": "Entered credentials are incorrect",
-            "invalid_email": "Entered email address is incorrect",
-            "invalid_password": "Entered password is incorrect",
-            "unknown": "Unknown error occured"
-        },
-        "step": {
-            "reauth_confirm": {
-                "data": {
-                    "password": "Password"
-                },
-                "title": "Reauthentiaction required for Owlet"
-            },
-            "user": {
-                "data": {
-                    "password": "Password",
-                    "region": "Region",
-                    "username": "Email"
-                }
-            }
-        }
+  "config": {
+    "abort": {
+      "already_configured": "Device already configured",
+      "reauth_successful": "Reauthentication successful",
+      "reconfigure_successful": "Reconfiguration successful"
     },
-    "entity": {
-        "binary_sensor": {
-            "awake": {
-                "name": "Awake"
-            },
-            "charging": {
-                "name": "Charging"
-            },
-            "crit_batt_alrt": {
-                "name": "Critical battery alert"
-            },
-            "crit_ox_alrt": {
-                "name": "Critical oxygen alert"
-            },
-            "high_hr_alrt": {
-                "name": "High heart rate alert"
-            },
-            "high_ox_alrt": {
-                "name": "High oxygen alert"
-            },
-            "lost_pwr_alrt": {
-                "name": "Lost power alert"
-            },
-            "low_batt_alrt": {
-                "name": "Low battery alert"
-            },
-            "low_hr_alrt": {
-                "name": "Low heart rate alert"
-            },
-            "low_ox_alrt": {
-                "name": "Low oxygen alert"
-            },
-            "sock_discon_alrt": {
-                "name": "Sock disconnected alert"
-            },
-            "sock_off": {
-                "name": "Sock off"
-            }
-        },
-        "sensor": {
-            "batterymin": {
-                "name": "Battery remaining"
-            },
-            "batterypercent": {
-                "name": "Battery percentage"
-            },
-            "heartrate": {
-                "name": "Heart rate"
-            },
-            "movement": {
-                "name": "Movement"
-            },
-            "movementbucket": {
-                "name": "Movement bucket"
-            },
-            "o2saturation": {
-                "name": "O2 saturation"
-            },
-            "o2saturation10a": {
-                "name": "O2 saturation 10 minute average"
-            },
-            "signalstrength": {
-                "name": "Signal strength"
-            },
-            "skintemp": {
-                "name": "Skin temperature"
-            },
-            "sleepstate": {
-                "name": "Sleep state",
-                "state": {
-                    "awake": "Awake",
-                    "deep_sleep": "Deep sleep",
-                    "light_sleep": "Light sleep",
-                    "unknown": "Unknown"
-                }
-            }
-        },
-        "switch": {
-            "base_on": {
-                "name": "Base station on"
-            }
-        }
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_credentials": "Entered credentials are incorrect",
+      "invalid_email": "Entered email address is incorrect",
+      "invalid_password": "Entered password is incorrect",
+      "unknown": "Unknown error occured",
+      "no_devices": "No supported Owlet devices found",
+      "rate_limited": "Owlet is rate limiting requests. Try again later."
     },
-    "options": {
-        "step": {
-            "init": {
-                "data": {
-                    "pollinterval": "Polling interval in seconds, min 10"
-                },
-                "title": "Configure options for Owlet"
-            }
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "password": "Password"
+        },
+        "title": "Reauthentication required for Owlet"
+      },
+      "user": {
+        "data": {
+          "password": "Password",
+          "region": "Region",
+          "username": "Email"
         }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Owlet region",
+        "data": {
+          "region": "Region",
+          "password": "Password"
+        }
+      }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "awake": {
+        "name": "Awake"
+      },
+      "charging": {
+        "name": "Charging"
+      },
+      "crit_batt_alrt": {
+        "name": "Critical battery alert"
+      },
+      "crit_ox_alrt": {
+        "name": "Critical oxygen alert"
+      },
+      "high_hr_alrt": {
+        "name": "High heart rate alert"
+      },
+      "high_ox_alrt": {
+        "name": "High oxygen alert"
+      },
+      "lost_pwr_alrt": {
+        "name": "Lost power alert"
+      },
+      "low_batt_alrt": {
+        "name": "Low battery alert"
+      },
+      "low_hr_alrt": {
+        "name": "Low heart rate alert"
+      },
+      "low_ox_alrt": {
+        "name": "Low oxygen alert"
+      },
+      "sock_discon_alrt": {
+        "name": "Sock disconnected alert"
+      },
+      "sock_off": {
+        "name": "Sock off"
+      },
+      "data_stale": {
+        "name": "Data stale"
+      },
+      "base_station_on": {
+        "name": "Base station on"
+      },
+      "discomfort_alrt": {
+        "name": "Discomfort alert"
+      },
+      "low_integ_read": {
+        "name": "Low integrity reading"
+      },
+      "preview_high_alarm": {
+        "name": "Preview high priority alarm"
+      },
+      "preview_med_alarm": {
+        "name": "Preview medium priority alarm"
+      },
+      "preview_low_alarm": {
+        "name": "Preview low priority alarm"
+      },
+      "preview_drm_alarm": {
+        "name": "Preview DRM priority alarm"
+      },
+      "discomfort_alert": {
+        "name": "Discomfort alert"
+      },
+      "low_integrity_reading": {
+        "name": "Low integrity reading"
+      },
+      "preview_high_priority_alarm": {
+        "name": "Preview high priority alarm"
+      },
+      "preview_medium_priority_alarm": {
+        "name": "Preview medium priority alarm"
+      },
+      "preview_low_priority_alarm": {
+        "name": "Preview low priority alarm"
+      },
+      "preview_drm_priority_alarm": {
+        "name": "Preview DRM priority alarm"
+      }
+    },
+    "sensor": {
+      "batterymin": {
+        "name": "Battery remaining"
+      },
+      "batterypercent": {
+        "name": "Battery percentage"
+      },
+      "heartrate": {
+        "name": "Heart rate"
+      },
+      "movement": {
+        "name": "Movement"
+      },
+      "movementbucket": {
+        "name": "Movement bucket"
+      },
+      "o2saturation": {
+        "name": "O2 saturation"
+      },
+      "o2saturation10a": {
+        "name": "O2 saturation 10 minute average"
+      },
+      "signalstrength": {
+        "name": "Signal strength"
+      },
+      "skintemp": {
+        "name": "Skin temperature"
+      },
+      "sleepstate": {
+        "name": "Sleep state",
+        "state": {
+          "awake": "Awake",
+          "deep_sleep": "Deep sleep",
+          "light_sleep": "Light sleep",
+          "unknown": "Unknown"
+        }
+      },
+      "last_updated": {
+        "name": "Last reading"
+      },
+      "last_red_alert": {
+        "name": "Last red alert"
+      },
+      "alerts_mask": {
+        "name": "Alerts mask"
+      },
+      "base_mon_status": {
+        "name": "Base monitoring status"
+      },
+      "battery_status": {
+        "name": "Battery status"
+      },
+      "bodyposition": {
+        "name": "Body position (experimental)",
+        "state": {
+          "no_data": "No data",
+          "moving": "Moving",
+          "undetected": "Undetected",
+          "on_back": "On back",
+          "on_side": "On side"
+        }
+      },
+      "base_monitoring_status": {
+        "name": "Base monitoring status"
+      },
+      "red_alert_updated_at": {
+        "name": "Red alert property updated at"
+      }
+    },
+    "switch": {
+      "base_on": {
+        "name": "Base station on"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Polling interval in seconds (5–3600)",
+          "stale_threshold": "Measurement freshness limit in minutes (0 disables)",
+          "activation_interval": "APP_ACTIVE cadence in seconds (10–600)",
+          "body_position": "Enable experimental historical body position"
+        },
+        "title": "Configure options for Owlet"
+      }
+    },
+    "error": {
+      "invalid_options": "Enter values within the displayed limits."
+    }
+  },
+  "issues": {
+    "stale_data": {
+      "title": "Owlet readings are stale or missing source times",
+      "description": "One or more expected readings have no recent source timestamp. Check the Owlet app and device connection. Home Assistant cannot establish current measurements from this response."
+    }
+  }
 }

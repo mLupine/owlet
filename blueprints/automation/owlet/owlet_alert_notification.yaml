@@ -1,0 +1,70 @@
+blueprint:
+  name: Owlet alert notification
+  description: >-
+    Optional Companion notifications for selected Owlet binary alerts. Notifications include startup and recovery
+    from unknown or unavailable by default; this can be disabled. Cloud polling can be delayed.
+  domain: automation
+  source_url: https://github.com/mLupine/owlet/blob/main/blueprints/automation/owlet/owlet_alert_notification.yaml
+  homeassistant:
+    min_version: "2024.1.2"
+  input:
+    alert_sensors:
+      name: Alert sensors
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: owlet
+              domain: binary_sensor
+    notify_device:
+      name: Companion phone
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+    critical:
+      name: Critical notification
+      default: false
+      selector:
+        boolean:
+    notify_initial_active:
+      name: Notify alerts first seen active at startup or recovery
+      description: May send one notification for each already-active selected alert.
+      default: true
+      selector:
+        boolean:
+trigger:
+  - platform: state
+    entity_id: !input alert_sensors
+    to: "on"
+    id: changed
+  - platform: homeassistant
+    event: start
+    id: startup
+variables:
+  selected_alerts: !input alert_sensors
+  critical: !input critical
+  notify_initial_active: !input notify_initial_active
+  active_alerts: >-
+    {% if trigger.id == 'startup' %}
+      {{ selected_alerts | select('is_state', 'on') | list if notify_initial_active else [] }}
+    {% elif notify_initial_active or (trigger.from_state is not none and trigger.from_state.state == 'off') %}
+      {{ [trigger.entity_id] }}
+    {% else %}
+      {{ [] }}
+    {% endif %}
+action:
+  - repeat:
+      for_each: "{{ active_alerts }}"
+      sequence:
+        - domain: mobile_app
+          type: notify
+          device_id: !input notify_device
+          title: Owlet alert
+          message: "{{ state_attr(repeat.item, 'friendly_name') or repeat.item }} is active"
+          data: >-
+            {{ {'ttl': 0, 'priority': 'high', 'channel': 'alarm_stream',
+                'push': {'sound': {'name': 'default', 'critical': 1, 'volume': 1.0}}}
+               if critical else {} }}
+mode: queued
+max: 10

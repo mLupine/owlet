@@ -132,3 +132,14 @@
 ### Fix
 * Removed Owlet specific constants, now using homeassistant generic constants
 * On initialisation the integration would crash when trying to update the auth token, the integration would then have to be deleted and setup again
+
+## 2026.11.0b1 superintegration candidate
+
+- Preserve schema-v2 accounts and serial-based sensors, binary sensors and base-station switches; guard v1 migration and test registry overrides and recorder history.
+- Apply configurable polling live, preserving the five-second default and unknown options. Credential persistence no longer reloads platforms.
+- Bundle the attributed MIT client; isolate malformed fields, serialize refresh, persist rotations through failures, classify transient/rate-limit errors and own activation cancellation.
+- Add source-specific freshness, nearest-expiry timers, stale diagnostics/repair warnings, Dream Sock status fields and late capability discovery.
+- Add opt-in isolated historical position with exact profile mapping, timestamp validation and unknown codes; retain optional dashboards and configurable startup/recovery notification examples.
+- Test actual custom-component loading on HA 2024.1.2, 2024.12.5 and 2026.10.2; provide reproducible dependency locks and a validated flat HACS ZIP builder. This candidate is not released.
+
+See docs/fork-adoption.md, docs/fork-adoption.tsv and NOTICE for source authors and adaptation boundaries.

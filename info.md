@@ -1,35 +1,16 @@
-# Owlet Custom Integration
+# Owlet for Home Assistant
 
-[![GitHub Release][releases-shield]][releases]
-[![GitHub Activity][commits-shield]][commits]
+Maintained by mLupine. Upgrades retain existing account entries, credentials,
+serial-based entities, user registry overrides, recorder history and the base-station
+switch. Do not delete/re-add entries when updating.
 
-[![License][license-shield]][license]
+Polling is configurable under Settings → Devices & services → Owlet → Configure.
+The default remains five seconds; saves apply to the running coordinators.
 
-[![hacs][hacsbadge]][hacs]
-[![Project Maintenance][maintenance-shield]][user_profile]
+The superintegration adds source-timestamp freshness, stale diagnostics, robust
+parsing/authentication, Dream Sock statuses and optional historical body position.
+Position is experimental and disabled by default. Optional notification blueprints
+and dashboards are installed manually.
 
-A custom component for the Owlet smart sock
-
-## Installation
-
-1. Click install.
-2. Reboot Home Assistant.
-3. Hard refresh browser cache.
-4. [![Add Integration][add-integration-badge]][add-integration] or in the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Owlet Smart Sock".
-
-<!---->
-
----
-
-[commits-shield]: https://img.shields.io/github/commit-activity/w/ryanbdclark/owlet?style=for-the-badge
-[commits]: https://github.com/ryanbdclark/owlet/commits/main
-[hacs]: https://github.com/hacs/integration
-[hacsbadge]: https://img.shields.io/badge/HACS-Custom-orange.svg?style=for-the-badge
-[license]: LICENSE
-[license-shield]: https://img.shields.io/github/license/ryanbdclark/owlet.svg?style=for-the-badge
-[maintenance-shield]: https://img.shields.io/badge/maintainer-Ryan%20Clark%20%40ryanbdclark-blue.svg?style=for-the-badge
-[releases-shield]: https://img.shields.io/github/release/ryanbdclark/owlet.svg?style=for-the-badge
-[releases]: https://github.com/ryanbdclark/owlet/releases
-[user_profile]: https://github.com/ryanbdclark
-[add-integration]: https://my.home-assistant.io/redirect/config_flow_start?domain=owlet
-[add-integration-badge]: https://my.home-assistant.io/badges/config_flow_start.svg
+Minimum tested HA: 2024.1.2. Read README.md for installation, exact policies,
+attribution, validation commands and limitations.

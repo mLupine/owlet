@@ -153,3 +153,5 @@ cython_debug/
 
 /custom_components/owlet.zip
 custom_components/owlet/owlet.zip
+.venv*/
+.ruff_cache/
