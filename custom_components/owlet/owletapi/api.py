@@ -568,7 +568,7 @@ class OwletAPI:
                     results[index] = await self._supported_version(
                         device["device"]["dsn"], versions
                     )
-                except OwletPermissionError:
+                except OwletDeviceError:
                     continue
 
         workers = [

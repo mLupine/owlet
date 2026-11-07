@@ -32,11 +32,12 @@ def add_properties(session, name, status=200, repeat=False):
     )
 
 
-async def test_denied_devices_do_not_hide_healthy_siblings_and_can_return():
+@pytest.mark.parametrize("status", [400, 403, 404])
+async def test_denied_devices_do_not_hide_healthy_siblings_and_can_return(status):
     session = FakeSession()
     api = authed(session)
     add_inventory(session, ["denied", "healthy"])
-    add_properties(session, "denied", status=403)
+    add_properties(session, "denied", status=status)
     add_properties(session, "healthy")
     result = await api.get_devices()
     assert [d["device"]["dsn"] for d in result["response"]] == ["healthy"]
@@ -48,11 +49,12 @@ async def test_denied_devices_do_not_hide_healthy_siblings_and_can_return():
     assert api.tokens["api_token"] == "valid"
 
 
-async def test_all_denied_devices_produce_no_supported_device_error():
+@pytest.mark.parametrize("status", [400, 403, 404])
+async def test_all_denied_devices_produce_no_supported_device_error(status):
     session = FakeSession()
     api = authed(session)
     add_inventory(session, ["denied"])
-    add_properties(session, "denied", status=403)
+    add_properties(session, "denied", status=status)
     with pytest.raises(OwletDevicesError):
         await api.get_devices()
 
@@ -104,11 +106,14 @@ async def test_large_inventory_has_four_probe_ceiling_and_joins_workers(cancel):
     assert active == 0
 
 
-async def test_entry_loads_healthy_device_and_reload_restores_denied_sibling(hass):
+@pytest.mark.parametrize("status", [400, 403, 404])
+async def test_entry_loads_healthy_device_and_reload_restores_denied_sibling(
+    hass, status
+):
     session = FakeSession()
     entry = create_entry(hass)
     add_inventory(session, ["denied", "healthy"])
-    add_properties(session, "denied", status=403)
+    add_properties(session, "denied", status=status)
     add_properties(session, "healthy", repeat=True)
     for name in ("denied", "healthy"):
         session.post(
