@@ -95,3 +95,99 @@ async def test_startup_explicitly_includes_already_active_selected_alerts(hass):
 @pytest.mark.parametrize("path", list(Path("dashboards").glob("*.yaml")))
 def test_dashboards_parse(path):
     assert load_yaml(path)["views"]
+
+
+def dashboard_cards(config):
+    for view in config["views"]:
+        yield from view.get("cards", [])
+        for section in view.get("sections", []):
+            yield from section.get("cards", [])
+
+
+@pytest.mark.parametrize("locale", ["en", "nl"])
+async def test_dashboard_explains_disabled_unknown_stale_and_failed_freshness(
+    hass, locale
+):
+    config = load_yaml(
+        Path("dashboards/owlet.yaml" if locale == "en" else "dashboards/owlet_nl.yaml")
+    )
+    cards = list(dashboard_cards(config))
+    source = next(
+        card["content"]
+        for card in cards
+        if "freshness_enabled" in card.get("content", "")
+    )
+    assert "utcnow(" not in source and "now(" not in source
+    expression = template.Template(source, hass)
+    entity = "binary_sensor.owlet_sock_serial_number_" + (
+        "data_stale" if locale == "en" else "verouderde_gegevens"
+    )
+    assert (
+        "unavailable" if locale == "en" else "niet beschikbaar"
+    ) in expression.async_render()
+    for state, enabled, success, expected in (
+        ("off", False, True, "off" if locale == "en" else "uit"),
+        (
+            "on",
+            True,
+            True,
+            "stale or unknown" if locale == "en" else "verouderd of onbekend",
+        ),
+        ("off", True, True, "within" if locale == "en" else "binnen"),
+        ("off", True, False, "failed" if locale == "en" else "mislukt"),
+    ):
+        hass.states.async_set(
+            entity,
+            state,
+            {
+                "freshness_enabled": enabled,
+                "poll_success": success,
+                "affected_readings": ["heart_rate"],
+            },
+        )
+        assert expected in expression.async_render()
+    controls = next(view for view in config["views"] if view.get("path") == "controls")
+    assert any(
+        card.get("entity", "").startswith("switch.") for card in controls["cards"]
+    )
+    for view in config["views"]:
+        if view is controls:
+            continue
+        assert not any(
+            card.get("entity", "").startswith("switch.")
+            for card in dashboard_cards({"views": [view]})
+        )
+
+
+@pytest.mark.parametrize("locale", ["en", "nl"])
+async def test_dashboard_never_hides_unknown_alerts_as_all_clear(hass, locale):
+    import re
+
+    config = load_yaml(
+        Path("dashboards/owlet.yaml" if locale == "en" else "dashboards/owlet_nl.yaml")
+    )
+    source = next(
+        card["content"]
+        for card in dashboard_cards(config)
+        if "namespace(unknown" in card.get("content", "")
+    )
+    expression = template.Template(source, hass)
+    unknown = (
+        "unknown or unavailable" if locale == "en" else "onbekend of niet beschikbaar"
+    )
+    assert unknown in expression.async_render()
+    entities = list(dict.fromkeys(re.findall(r"binary_sensor\.[a-z0-9_]+", source)))
+    assert len(entities) == 9
+    for entity in entities:
+        hass.states.async_set(entity, "off")
+    assert (
+        "flags are off" if locale == "en" else "alarmvlaggen staan uit"
+    ) in expression.async_render()
+    hass.states.async_set(entities[0], "on")
+    assert (
+        "active alerts" if locale == "en" else "actieve alarmen"
+    ) in expression.async_render()
+    hass.states.async_set(entities[1], "unavailable")
+    result = expression.async_render()
+    assert unknown in result
+    assert ("active alerts" if locale == "en" else "actieve alarmen") in result

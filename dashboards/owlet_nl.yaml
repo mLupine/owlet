@@ -62,6 +62,20 @@ views:
           # Verouderde gegevens: enkel zichtbaar wanneer de cloud geen nieuwe meting stuurt
           - type: markdown
             content: >-
+              {% if not has_value('binary_sensor.owlet_sock_serial_number_verouderde_gegevens') %}
+              Versheidsstatus niet beschikbaar. Controleer de entiteiten en de Owlet-app.
+              {% elif state_attr('binary_sensor.owlet_sock_serial_number_verouderde_gegevens', 'poll_success') is false %}
+              Cloudupdate mislukt. De waarden bevestigen de huidige apparaatstatus niet.
+              {% elif state_attr('binary_sensor.owlet_sock_serial_number_verouderde_gegevens', 'freshness_enabled') is not true %}
+              Versheidscontrole staat uit. De ouderdom van metingen wordt niet beoordeeld.
+              {% elif is_state('binary_sensor.owlet_sock_serial_number_verouderde_gegevens', 'on') %}
+              Metingen zijn verouderd of onbekend: {{ state_attr('binary_sensor.owlet_sock_serial_number_verouderde_gegevens', 'affected_readings') | join(', ') }}.
+              {% else %}
+              Brontijdstempels vallen binnen de ingestelde versheidslimiet.
+              Oplopende cloudtijdstempels bewijzen geen actuele metingen.
+              {% endif %}
+          - type: markdown
+            content: >-
               {% set last = as_datetime(states('sensor.owlet_sock_serial_number_laatste_meting'), none) %}
               **Verouderde gegevens.** Geen nieuwe meting van de Owlet-cloud sinds
               {{ as_local(last).strftime('%H:%M') if last else 'onbekend' }}.
@@ -190,11 +204,6 @@ views:
                 entity: binary_sensor.owlet_sock_serial_number_sok_uit
                 state: "on"
 
-          - type: tile
-            entity: switch.owlet_sock_serial_number_basisstation_aan
-            name: Basisstation
-            icon: mdi:access-point
-            color: green
 
       # ========================================================
       # MELDINGEN
@@ -207,39 +216,16 @@ views:
 
           # Geen actieve meldingen
           - type: markdown
-            content: |
-              ## ✅ Geen actieve Owlet-meldingen
-              De Owlet-cloud meldt momenteel geen alarmen.
-            visibility:
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij
-                state: "off"
-
-          # KRITIEK ZUURSTOFGEHALTE (enkel op socks die dit melden)
+            content: >-
+              {% set alerts = ['binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte', 'binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag', 'binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag', 'binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden', 'binary_sensor.owlet_sock_serial_number_alarm_stroomuitval', 'binary_sensor.owlet_sock_serial_number_alarm_lage_batterij', 'binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij'] %}
+              {% set ns = namespace(unknown=false, active=false) %}
+              {% for entity in alerts %}
+                {% if states(entity) not in ['on', 'off'] %}{% set ns.unknown = true %}{% endif %}
+                {% if is_state(entity, 'on') %}{% set ns.active = true %}{% endif %}
+              {% endfor %}
+              {% if ns.unknown %}Sommige alarmstatussen zijn onbekend of niet beschikbaar. Controleer de Owlet-app.{% endif %}
+              {% if ns.active %}Owlet meldt actieve alarmen. Dit zijn cloudgebeurtenissen.{% endif %}
+              {% if not ns.unknown and not ns.active %}Alle geselecteerde cloudalarmvlaggen staan uit. Dit bewijst geen actuele bewaking.{% endif %}
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
             name: Kritiek zuurstofgehalte
@@ -342,7 +328,7 @@ views:
   # ============================================================
   # VIEW 2: TRENDS
   # ============================================================
-  - title: Trends
+  - title: Historie
     path: trends
     icon: mdi:chart-line
     type: sections
@@ -512,3 +498,16 @@ views:
               binnen en kunnen vertraagd zijn of zonder waarschuwing stoppen.
 
               Gebruik voor Owlet-alarmen altijd de officiële Owlet-app en het basisstation.
+
+  - title: Bediening
+    path: controls
+    cards:
+      - type: markdown
+        content: Optionele bediening van het basisstation. Cloudacceptatie en teruggelezen status bewijzen de fysieke toestand niet.
+      - type: tile
+        entity: switch.owlet_sock_serial_number_basisstation_aan
+        name: Basisstation
+        tap_action:
+          action: more-info
+        icon_tap_action:
+          action: more-info

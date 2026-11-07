@@ -218,6 +218,7 @@ class OwletStaleSensor(OwletBinarySensor):
     @property
     def extra_state_attributes(self):
         return {
+            "freshness_enabled": bool(self.coordinator.stale_seconds),
             "affected_readings": self.coordinator.affected_vitals,
             "readings_expected": self.coordinator.readings_expected,
             "poll_success": self.coordinator.last_update_success,

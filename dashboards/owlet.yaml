@@ -28,6 +28,20 @@ views:
             icon: mdi:heart-pulse
           - type: markdown
             content: >-
+              {% if not has_value('binary_sensor.owlet_sock_serial_number_data_stale') %}
+              Freshness status unavailable. Check entity bindings and the Owlet app.
+              {% elif state_attr('binary_sensor.owlet_sock_serial_number_data_stale', 'poll_success') is false %}
+              Cloud update failed. Displayed values cannot establish current device status.
+              {% elif state_attr('binary_sensor.owlet_sock_serial_number_data_stale', 'freshness_enabled') is not true %}
+              Freshness checking is off. Reading age is not assessed.
+              {% elif is_state('binary_sensor.owlet_sock_serial_number_data_stale', 'on') %}
+              Readings are stale or unknown: {{ state_attr('binary_sensor.owlet_sock_serial_number_data_stale', 'affected_readings') | join(', ') }}.
+              {% else %}
+              Source timestamps are within the configured freshness limit.
+              Advancing cloud timestamps do not prove live measurements.
+              {% endif %}
+          - type: markdown
+            content: >-
               {% set last = as_datetime(states('sensor.owlet_sock_serial_number_last_reading'), none) %}
               **Readings are stale.** No new data from the Owlet cloud since
               {{ as_local(last).strftime('%H:%M') if last else 'unknown' }}.
@@ -36,18 +50,12 @@ views:
               - condition: state
                 entity: binary_sensor.owlet_sock_serial_number_data_stale
                 state: "on"
-          - type: gauge
+          - type: tile
             entity: sensor.owlet_sock_serial_number_heart_rate
             name: Heart rate
-            min: 40
-            max: 220
-            needle: true
-          - type: gauge
+          - type: tile
             entity: sensor.owlet_sock_serial_number_o2_saturation
             name: O2 saturation
-            min: 70
-            max: 100
-            needle: true
           - type: tile
             entity: sensor.owlet_sock_serial_number_o2_saturation_10_minute_average
             name: O2 10 min average
@@ -63,9 +71,6 @@ views:
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_charging
             name: Charging
-          - type: tile
-            entity: switch.owlet_sock_serial_number_base_station_on
-            name: Base station
 
       - type: grid
         cards:
@@ -73,36 +78,16 @@ views:
             heading: Owlet alerts
             icon: mdi:alert
           - type: markdown
-            content: No Owlet alerts active.
-            visibility:
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_critical_oxygen_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_low_oxygen_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_high_oxygen_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_high_heart_rate_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_low_heart_rate_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_sock_disconnected_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_lost_power_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_low_battery_alert
-                state: "off"
-              - condition: state
-                entity: binary_sensor.owlet_sock_serial_number_critical_battery_alert
-                state: "off"
-          # Each alert only shows while Owlet reports it as active.
+            content: >-
+              {% set alerts = ['binary_sensor.owlet_sock_serial_number_critical_oxygen_alert', 'binary_sensor.owlet_sock_serial_number_low_oxygen_alert', 'binary_sensor.owlet_sock_serial_number_high_oxygen_alert', 'binary_sensor.owlet_sock_serial_number_high_heart_rate_alert', 'binary_sensor.owlet_sock_serial_number_low_heart_rate_alert', 'binary_sensor.owlet_sock_serial_number_sock_disconnected_alert', 'binary_sensor.owlet_sock_serial_number_lost_power_alert', 'binary_sensor.owlet_sock_serial_number_low_battery_alert', 'binary_sensor.owlet_sock_serial_number_critical_battery_alert'] %}
+              {% set ns = namespace(unknown=false, active=false) %}
+              {% for entity in alerts %}
+                {% if states(entity) not in ['on', 'off'] %}{% set ns.unknown = true %}{% endif %}
+                {% if is_state(entity, 'on') %}{% set ns.active = true %}{% endif %}
+              {% endfor %}
+              {% if ns.unknown %}Some alert states are unknown or unavailable. Check the Owlet app.{% endif %}
+              {% if ns.active %}Owlet reports active alerts. These are cloud event states.{% endif %}
+              {% if not ns.unknown and not ns.active %}All selected cloud alert flags are off. This does not prove current monitoring.{% endif %}
           - type: tile
             entity: binary_sensor.owlet_sock_serial_number_critical_oxygen_alert
             name: Critical oxygen
@@ -171,7 +156,7 @@ views:
         column_span: 2
         cards:
           - type: heading
-            heading: Last 12 hours
+            heading: Historical readings, last 12 hours
             icon: mdi:chart-line
           # One unit per graph: heart rate and O2 are never plotted on two axes.
           - type: history-graph
@@ -209,7 +194,7 @@ views:
         column_span: 2
         cards:
           - type: heading
-            heading: Trends
+            heading: Historical statistics
             icon: mdi:chart-timeline-variant
           # Long-term statistics, kept by Home Assistant beyond the recorder purge.
           - type: statistics-graph
@@ -279,3 +264,16 @@ views:
               This is not a medical device. Data is polled from the Owlet cloud
               and can be delayed or stop without warning. Keep the Owlet base
               station and app as your primary alert.
+
+  - title: Controls
+    path: controls
+    cards:
+      - type: markdown
+        content: Optional base-station control. Cloud acceptance and matching readback do not prove physical state.
+      - type: tile
+        entity: switch.owlet_sock_serial_number_base_station_on
+        name: Base station
+        tap_action:
+          action: more-info
+        icon_tap_action:
+          action: more-info
