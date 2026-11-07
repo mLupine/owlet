@@ -123,6 +123,7 @@ class BodyPositionCoordinator(DataUpdateCoordinator[PositionSample | None]):
             ) as response:
                 if response.status != 200:
                     self._profile = None
+                    self._profile_expiry = 0.0
                     raise UpdateFailed("Historical Owlet position request failed")
                 return await response.json(content_type=None)
         except (aiohttp.ClientError, TimeoutError, ValueError):
@@ -295,6 +296,7 @@ class BodyPositionSensor(OwletBaseEntity, SensorEntity):
         if self._remove_body_listener:
             self._remove_body_listener()
             self._remove_body_listener = None
+        self._body = None
         await super().async_will_remove_from_hass()
 
     @property

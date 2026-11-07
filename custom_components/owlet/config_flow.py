@@ -213,7 +213,10 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             {
                 vol.Required(
                     CONF_SCAN_INTERVAL, default=polling_interval(options)
-                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=3600)),
+                ): vol.All(
+                    vol.Coerce(int),
+                    vol.Range(min=5, max=max(3600, polling_interval(options))),
+                ),
                 vol.Required(
                     CONF_STALE_THRESHOLD,
                     default=integer_option(

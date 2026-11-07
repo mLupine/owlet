@@ -14,7 +14,7 @@ Minimum tested Home Assistant: **2024.1.2**. Also tested with **2026.10.2**. See
 
 ## Change polling in Home Assistant
 
-Open **Settings → Devices & services → Integrations → Owlet → Configure** (the entry's options/gear control). Save a polling interval from **5 to 3600 seconds**. The default remains **5 seconds**. The running coordinators reschedule using the new interval; no HA restart or account recreation is required. Unknown stored option keys are preserved. Credential rotation saves do not reload platforms.
+Open **Settings → Devices & services → Integrations → Owlet → Configure** (the entry's options/gear control). Save a polling interval from **5 to 3600 seconds**. Existing intervals above 3600 seconds are preserved; their options form accepts up to the stored interval. The default remains **5 seconds**. The running coordinators reschedule using the new interval; no HA restart or account recreation is required. Unknown stored option keys are preserved. Credential rotation saves do not reload platforms.
 
 Additional options:
 

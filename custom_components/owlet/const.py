@@ -15,14 +15,18 @@ SLEEP_STATES = {0: "unknown", 1: "awake", 8: "light_sleep", 15: "deep_sleep"}
 
 
 def integer_option(
-    options: dict, key: str, default: int, minimum: int, maximum: int
+    options: dict, key: str, default: int, minimum: int, maximum: int | None
 ) -> int:
     value = options.get(key, default)
     if isinstance(value, bool) or not isinstance(value, int | float | str):
         return default
     try:
         number = int(value)
-        if float(value) != number or not minimum <= number <= maximum:
+        if (
+            float(value) != number
+            or number < minimum
+            or (maximum is not None and number > maximum)
+        ):
             return default
     except (ValueError, TypeError, OverflowError):
         return default
@@ -30,7 +34,7 @@ def integer_option(
 
 
 def polling_interval(options: dict) -> int:
-    return integer_option(options, "scan_interval", POLLING_INTERVAL, 5, 3600)
+    return integer_option(options, "scan_interval", POLLING_INTERVAL, 5, None)
 
 
 def account_unique_id(region: str, username: str) -> str:

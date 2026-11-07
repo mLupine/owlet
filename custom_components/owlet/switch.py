@@ -59,6 +59,10 @@ class OwletBaseSwitch(OwletBaseEntity, SwitchEntity):
         self._readback_task: asyncio.Task | None = None
         self._removed = False
 
+    async def async_added_to_hass(self) -> None:
+        self._removed = False
+        await super().async_added_to_hass()
+
     @property
     def available(self) -> bool:
         return (
