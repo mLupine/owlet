@@ -30,6 +30,7 @@ logger: Logger = logging.getLogger(__package__)
 
 MIN_RETRY_AFTER = 5.0
 MAX_RETRY_AFTER = 3600.0
+DISCOVERY_CONCURRENCY = 4
 
 
 TOO_MANY_ATTEMPTS_BACKOFF = 900.0
@@ -552,6 +553,35 @@ class OwletAPI:
             return 2 if 2 in versions else None
         return None
 
+    async def _probe_device_versions(
+        self, devices: list[dict[str, Any]], versions: list[int]
+    ) -> list[int | None]:
+        """Bound discovery work and isolate device-specific permission failures."""
+        pending = iter(enumerate(devices))
+        results: list[int | None] = [None] * len(devices)
+
+        async def probe_pending_devices() -> None:
+            for index, device in pending:
+                try:
+                    results[index] = await self._supported_version(
+                        device["device"]["dsn"], versions
+                    )
+                except OwletPermissionError:
+                    continue
+
+        workers = [
+            asyncio.create_task(probe_pending_devices())
+            for _ in range(min(DISCOVERY_CONCURRENCY, len(devices)))
+        ]
+        try:
+            await asyncio.gather(*workers)
+        finally:
+            for worker in workers:
+                if not worker.done():
+                    worker.cancel()
+            await asyncio.gather(*workers, return_exceptions=True)
+        return results
+
     async def get_devices(
         self,
         versions: list[int] | None = None,
@@ -578,19 +608,7 @@ class OwletAPI:
                 unique_devices.setdefault(device["device"]["dsn"], device)
             devices = list(unique_devices.values())
 
-            checks = [
-                asyncio.create_task(
-                    self._supported_version(d["device"]["dsn"], versions)
-                )
-                for d in devices
-            ]
-            try:
-                results = await asyncio.gather(*checks)
-            finally:
-                for task in checks:
-                    if not task.done():
-                        task.cancel()
-                await asyncio.gather(*checks, return_exceptions=True)
+            results = await self._probe_device_versions(devices, versions)
 
             valid_devices = [
                 {**device, "verified_version": version}

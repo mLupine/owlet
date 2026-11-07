@@ -32,3 +32,5 @@ Scope: the complete 2026-11-07 issue export, excluding pull requests, contains 2
 | [46](https://github.com/Wiggi26/owlet/issues/46) | Already satisfied | Local brand icon and original NOTICE provenance are present; the exact package inventory requires icon/provenance and notices. Upstream closed after attributable original icon adoption. |
 
 All three standard profiles pass 263 tests. Exact commands, artifact hashes, advisory results and manual limits are in [validation](validation.md). Substantive choices are in [roadmap decisions](roadmap-decisions.tsv).
+
+Parent review correction: the first candidate did not isolate discovery-time device 403 responses or bound distinct capability probes. `tests/test_discovery_isolation.py` reproduced both against cf61a6c (five failed cases). Discovery now uses at most four workers, preserves inventory order, skips only denied devices, and joins workers on failure/cancellation. Actual HA setup/reload verifies a healthy sibling stays available and the denied device returns after access is restored. Four is a conservative local concurrency policy, not a vendor-published limit.

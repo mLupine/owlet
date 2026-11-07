@@ -80,3 +80,7 @@ Ruff check/format pass. Python tokenization found zero ordinary comments across 
 [Roadmap coverage](roadmap-coverage.md) records all 24 dispositions. HA-owned entry-title and registry logs can expose existing identifiers; preserving user titles and IDs rules out claiming universal Core log redaction. No title rewrite, global logger filter, registry cleanup, recorder purge or runtime_data migration is introduced.
 
 Owner-run acceptance remains separate: preserve a private configuration/recorder backup; update the existing entry without deleting it; inspect options and reauth feedback; compare exact entity bindings and effective polling after restart; observe ordinary regional authentication/refresh/recovery privately; verify rollback on the chosen release. Record only versions, region category, anonymous device counts and pass/fail outcomes. Do not deliberately interrupt official monitoring or exercise physical controls for this checklist. Long-term V2/V3, Dream/European, phone delivery and rendered mobile/tablet/theme acceptance remain unverified by this run.
+
+## Parent discovery review corrections
+
+The five new discovery regressions all fail against cf61a6c and pass with bounded workers and device-permission isolation. Full standard suites independently pass 268 tests per profile from `/Users/maciej/Code/owlet`. The frozen cross-family review still targets cf61a6c; final package hashes above predate these corrections and must be regenerated before publication.
