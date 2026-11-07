@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 import pytest
 from homeassistant import config_entries
@@ -28,6 +28,11 @@ from .fixture_data import load_fixture
 @pytest.fixture(autouse=True)
 def flow_cloud_boundary():
     with (
+        patch(
+            "custom_components.owlet.config_flow.OwletAPI.tokens",
+            new_callable=PropertyMock,
+            return_value=AUTH_RETURN,
+        ),
         patch(
             "custom_components.owlet.config_flow.OwletAPI.get_devices",
             return_value=json.loads(load_fixture("get_devices.json")),

@@ -191,7 +191,7 @@ views:
                 state: "on"
 
           - type: tile
-            entity: binary_sensor.owlet_sock_serial_number_basisstation_aan
+            entity: switch.owlet_sock_serial_number_basisstation_aan
             name: Basisstation
             icon: mdi:access-point
             color: green

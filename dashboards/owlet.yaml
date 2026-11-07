@@ -64,7 +64,7 @@ views:
             entity: binary_sensor.owlet_sock_serial_number_charging
             name: Charging
           - type: tile
-            entity: binary_sensor.owlet_sock_serial_number_base_station_on
+            entity: switch.owlet_sock_serial_number_base_station_on
             name: Base station
 
       - type: grid

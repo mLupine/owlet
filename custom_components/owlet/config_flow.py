@@ -83,8 +83,8 @@ async def authenticate_account(
     finally:
         await api.close()
     tokens = {
-        **api.tokens,
         **(returned_tokens if isinstance(returned_tokens, dict) else {}),
+        **api.tokens,
     }
     if not errors and not all(
         tokens.get(key) for key in ("api_token", "refresh", "expiry")
