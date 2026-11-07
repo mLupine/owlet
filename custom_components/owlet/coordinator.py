@@ -69,7 +69,7 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self.entry = entry
         self._cancel_expiry = None
         self._stopped = False
-        self._in_flight = None
+        self._in_flight: set[asyncio.Task] = set()
         self._failure_count = 0
         self.successful_polls = 0
         self._options = None
@@ -254,11 +254,12 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
     async def _async_update_data(self) -> None:
         if self._stopped:
             return
-        self._in_flight = asyncio.current_task()
+        task = asyncio.current_task()
+        self._in_flight.add(task)
         try:
             await self._async_poll()
         finally:
-            self._in_flight = None
+            self._in_flight.discard(task)
 
     async def _async_poll(self) -> None:
         try:
@@ -276,6 +277,8 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
             )
             self.update_interval = timedelta(seconds=delay)
             raise UpdateFailed("Unable to update Owlet readings") from None
+        except Exception:
+            raise UpdateFailed("Unexpected Owlet update failure") from None
         finally:
             store_tokens(self.hass, self.entry, self.sock.api.tokens)
         if self._stopped:
@@ -326,17 +329,17 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
             await asyncio.gather(self._body_task, return_exceptions=True)
 
     async def async_close(self) -> None:
-        task = self._in_flight
+        tasks = self._in_flight - {asyncio.current_task()}
         self.shutdown()
-        if task and task is not asyncio.current_task():
-            await asyncio.gather(task, return_exceptions=True)
+        if tasks:
+            await asyncio.gather(*tasks, return_exceptions=True)
         await self.async_stop_body_position()
 
     @callback
     def shutdown(self) -> None:
         self._stopped = True
-        if self._in_flight and self._in_flight is not asyncio.current_task():
-            self._in_flight.cancel()
+        for task in self._in_flight - {asyncio.current_task()}:
+            task.cancel()
         self._unschedule_refresh()
         if self._cancel_expiry:
             self._cancel_expiry()

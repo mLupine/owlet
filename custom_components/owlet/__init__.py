@@ -100,6 +100,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         ) from None
     except (OwletError, TimeoutError):
         raise ConfigEntryNotReady("Unable to retrieve Owlet devices") from None
+    except (ConfigEntryAuthFailed, ConfigEntryNotReady):
+        raise
+    except Exception:
+        raise ConfigEntryNotReady("Unexpected Owlet setup failure") from None
     finally:
         if api is not None:
             store_tokens(hass, entry, api.tokens)

@@ -89,3 +89,32 @@ async def test_platform_forwarding_failure_cleans_runtime(hass, cloud, cancel, p
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)
+
+
+async def test_unload_joins_overlapping_manual_and_scheduled_polls(hass, cloud):
+    entry = create_entry(hass)
+    coordinator = await setup_entry(hass, entry)
+    started = asyncio.Event()
+    cancelled = []
+
+    async def blocked(serial):
+        started.set()
+        try:
+            await asyncio.Event().wait()
+        finally:
+            cancelled.append(serial)
+
+    cloud[2].side_effect = blocked
+    polls = [asyncio.create_task(coordinator.async_refresh()) for _ in range(2)]
+    try:
+        await started.wait()
+        await asyncio.sleep(0)
+        expected = 1 if hasattr(coordinator._debounced_refresh, "async_lock") else 2
+        assert cloud[2].await_count == 1 + expected
+        assert await hass.config_entries.async_unload(entry.entry_id)
+        await asyncio.wait_for(asyncio.gather(*polls, return_exceptions=True), 1)
+        assert cancelled == ["unit-one"] * expected
+    finally:
+        for task in polls:
+            task.cancel()
+        await asyncio.gather(*polls, return_exceptions=True)

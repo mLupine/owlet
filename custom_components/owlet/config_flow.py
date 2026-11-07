@@ -54,15 +54,16 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 async def authenticate_account(
     hass, region: str, username: str, password: str
 ) -> tuple[dict, dict]:
-    api = OwletAPI(
-        region=region,
-        user=username,
-        password=password,
-        session=async_get_clientsession(hass),
-    )
+    api = None
     errors = {}
     returned_tokens = None
     try:
+        api = OwletAPI(
+            region=region,
+            user=username,
+            password=password,
+            session=async_get_clientsession(hass),
+        )
         returned_tokens = await api.authenticate()
         await api.get_devices(SUPPORTED_VERSIONS)
     except OwletEmailError:
@@ -81,10 +82,11 @@ async def authenticate_account(
         _LOGGER.error("Unexpected Owlet login failure")
         errors["base"] = "unknown"
     finally:
-        await api.close()
+        if api is not None:
+            await api.close()
     tokens = {
         **(returned_tokens if isinstance(returned_tokens, dict) else {}),
-        **api.tokens,
+        **(api.tokens if api is not None else {}),
     }
     if not errors and not all(
         tokens.get(key) for key in ("api_token", "refresh", "expiry")

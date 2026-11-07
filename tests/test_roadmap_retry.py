@@ -141,3 +141,99 @@ async def test_discovery_failure_joins_other_capability_requests():
         with pytest.raises(OwletConnectionError):
             await api.get_devices()
     assert cancelled.is_set()
+
+
+async def test_duplicate_discovery_is_bounded_and_activation_is_not_per_poll():
+    session = FakeSession()
+    api = authed(session)
+    session.get(
+        BASE + "/devices.json",
+        payload=[{"device": {"dsn": name}} for name in ("one", "two", "one")],
+    )
+    for name in ("one", "two"):
+        session.get(
+            BASE + f"/dsns/{name}/properties.json",
+            payload=[{"property": {"name": "REAL_TIME_VITALS", "value": "{}"}}],
+            repeat=True,
+        )
+        session.post(
+            BASE + f"/dsns/{name}/properties/APP_ACTIVE/datapoints.json",
+            payload={},
+            repeat=True,
+        )
+    discovery = await api.get_devices()
+    assert [device["device"]["dsn"] for device in discovery["response"]] == [
+        "one",
+        "two",
+    ]
+    assert sum(map(len, session.requests.values())) == 3
+    with patch("custom_components.owlet.owletapi.api.time.monotonic", return_value=100):
+        for _ in range(3):
+            await asyncio.gather(api.get_properties("one"), api.get_properties("two"))
+            await asyncio.gather(*api._activation_tasks.values())
+    assert (
+        sum(
+            len(calls)
+            for (method, _), calls in session.requests.items()
+            if method == "POST"
+        )
+        == 2
+    )
+    assert sum(map(len, session.requests.values())) == 11
+    assert api.tokens["api_token"] == "valid"
+    await api.close()
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"id_token": "identity"},
+        {"refresh_token": "new"},
+        {"refresh_token": 17, "id_token": "identity"},
+    ],
+)
+async def test_malformed_refresh_never_overwrites_complete_credentials(payload):
+    session = FakeSession()
+    key = REGION_INFO["europe"]["apiKey"]
+    session.post(
+        f"https://securetoken.googleapis.com/v1/token?key={key}", payload=payload
+    )
+    api = OwletAPI(
+        "europe", token="old", expiry=0, refresh="old-refresh", session=session
+    )
+    with pytest.raises(OwletConnectionError):
+        await api.authenticate()
+    assert api.tokens == {"api_token": "old", "expiry": 0, "refresh": "old-refresh"}
+
+
+async def test_transient_backoff_is_bounded_and_resets_after_success():
+    session = FakeSession()
+    url = BASE + "/devices.json"
+    api = authed(session)
+    now = 100
+    delays = []
+    for _ in range(9):
+        session.get(url, status=503)
+        with patch(
+            "custom_components.owlet.owletapi.api.time.monotonic", return_value=now
+        ):
+            with pytest.raises(OwletConnectionError):
+                await api._request("GET", "/devices.json")
+            with pytest.raises(OwletRateLimitError) as caught:
+                await api._request("GET", "/devices.json")
+        delays.append(caught.value.retry_after)
+        now += caught.value.retry_after + 1
+    assert delays == [5, 10, 20, 40, 80, 160, 300, 300, 300]
+    session.get(url, payload=[])
+    with patch("custom_components.owlet.owletapi.api.time.monotonic", return_value=now):
+        assert await api._request("GET", "/devices.json") == []
+    session.get(url, status=503)
+    with patch(
+        "custom_components.owlet.owletapi.api.time.monotonic", return_value=now + 1
+    ):
+        with pytest.raises(OwletConnectionError):
+            await api._request("GET", "/devices.json")
+        with pytest.raises(OwletRateLimitError) as caught:
+            await api._request("GET", "/devices.json")
+    assert caught.value.retry_after == 5

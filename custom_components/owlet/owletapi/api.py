@@ -573,6 +573,11 @@ class OwletAPI:
                 and item["device"]["dsn"]
             ]
 
+            unique_devices = {}
+            for device in devices:
+                unique_devices.setdefault(device["device"]["dsn"], device)
+            devices = list(unique_devices.values())
+
             checks = [
                 asyncio.create_task(
                     self._supported_version(d["device"]["dsn"], versions)

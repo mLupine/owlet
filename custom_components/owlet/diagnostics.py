@@ -1,5 +1,8 @@
 """Allowlisted operational diagnostics without account or device identifiers."""
 
+from homeassistant.const import __version__ as HA_VERSION
+from homeassistant.loader import async_get_integration
+
 from .const import DOMAIN
 
 
@@ -22,4 +25,10 @@ async def async_get_config_entry_diagnostics(hass, entry) -> dict:
                 "body_position_enabled": coordinator.body_position_enabled,
             }
         )
-    return {"entry_version": entry.version, "devices": devices}
+    integration = await async_get_integration(hass, DOMAIN)
+    return {
+        "entry_version": entry.version,
+        "integration_version": integration.version,
+        "homeassistant_version": HA_VERSION,
+        "devices": devices,
+    }

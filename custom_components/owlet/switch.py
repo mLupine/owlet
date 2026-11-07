@@ -153,9 +153,15 @@ class OwletBaseSwitch(OwletBaseEntity, SwitchEntity):
                 self._command_task = self.hass.async_create_task(
                     self.sock.control_base_station(state)
                 )
-                await self._command_task
+                accepted = await self._command_task
+                if accepted is not True:
+                    raise OwletError("Owlet base-station command was not accepted")
             except (OwletError, TimeoutError):
                 raise HomeAssistantError("Owlet base-station command failed") from None
+            except Exception:
+                raise HomeAssistantError(
+                    "Unexpected Owlet base-station command failure"
+                ) from None
             finally:
                 self._command_task = None
             self._cancel_confirmation()
