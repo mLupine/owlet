@@ -2,6 +2,7 @@ import asyncio
 import logging
 import math
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
@@ -19,6 +20,7 @@ from .exceptions import (
     OwletEmailError,
     OwletError,
     OwletPasswordError,
+    OwletPermissionError,
     OwletRateLimitError,
     OwletReadOnlyError,
 )
@@ -55,7 +57,7 @@ def parse_retry_after(value: Any) -> float | None:
     except ValueError:
         try:
             seconds = (parsedate_to_datetime(text) - datetime.now(UTC)).total_seconds()
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return None
     if not math.isfinite(seconds):
         return None
@@ -80,7 +82,10 @@ def _transient_error(status: int, headers: Any) -> OwletConnectionError | None:
             retry_after=parse_retry_after(_header(headers, "Retry-After")),
         )
     if status >= 500:
-        return OwletConnectionError(f"Owlet service error {status}")
+        return OwletConnectionError(
+            f"Owlet service error {status}",
+            retry_after=parse_retry_after(_header(headers, "Retry-After")),
+        )
     return None
 
 
@@ -165,6 +170,7 @@ class OwletAPI:
         self._activation_tasks: dict[str, asyncio.Task] = {}
         self.tokens_updated = None
         self._request_not_before = 0.0
+        self._transient_failures = 0
         self._firebase_identity = None
         self._firebase_expiry = 0.0
         self.headers: dict[str, str] = {}
@@ -449,44 +455,46 @@ class OwletAPI:
         if self._auth_token and self._expiry is not None and self._expiry > time.time():
             return None
         async with self._auth_lock:
-            try:
-                if self._auth_token is None and self._refresh is None:
-                    if self._user is None or self._password is None:
-                        raise OwletAuthenticationError(
-                            "Username or password not supplied",
-                        )
+            with self._request_budget():
+                try:
+                    if self._auth_token is None and self._refresh is None:
+                        if self._user is None or self._password is None:
+                            raise OwletAuthenticationError(
+                                "Username or password not supplied",
+                            )
 
-                    await self.password_verification()
+                        await self.password_verification()
 
-                if (
-                    self._auth_token is None
-                    or self._expiry is None
-                    or self._expiry <= time.time()
-                ):
-                    return await self.refresh_authentication()
-            except (aiohttp.ClientError, TimeoutError):
-                raise OwletConnectionError(
-                    "Error connecting to the Owlet login service"
-                ) from None
+                    if (
+                        self._auth_token is None
+                        or self._expiry is None
+                        or self._expiry <= time.time()
+                    ):
+                        return await self.refresh_authentication()
+                except (aiohttp.ClientError, TimeoutError):
+                    raise OwletConnectionError(
+                        "Error connecting to the Owlet login service"
+                    ) from None
 
         return None
 
     async def firebase_identity(self) -> tuple[str, str]:
         """Share identity refresh and rotation with the primary API client."""
         async with self._auth_lock:
-            if (
-                self._firebase_identity is None
-                or time.monotonic() >= self._firebase_expiry
-            ):
-                try:
-                    await self._refresh_firebase_identity()
-                except (aiohttp.ClientError, TimeoutError):
-                    raise OwletConnectionError(
-                        "Owlet identity refresh unavailable"
-                    ) from None
-            if self._firebase_identity is None:
-                raise OwletConnectionError("Identity response was incomplete")
-            return self._firebase_identity
+            with self._request_budget():
+                if (
+                    self._firebase_identity is None
+                    or time.monotonic() >= self._firebase_expiry
+                ):
+                    try:
+                        await self._refresh_firebase_identity()
+                    except (aiohttp.ClientError, TimeoutError):
+                        raise OwletConnectionError(
+                            "Owlet identity refresh unavailable"
+                        ) from None
+                if self._firebase_identity is None:
+                    raise OwletConnectionError("Identity response was incomplete")
+                return self._firebase_identity
 
     async def validate_authentication(self) -> TokenDict:
         """Validate the token against an authenticated endpoint."""
@@ -495,13 +503,14 @@ class OwletAPI:
 
     async def _refresh_rejected_token(self, rejected_token: str | None) -> None:
         async with self._auth_lock:
-            if self._auth_token == rejected_token:
-                try:
-                    await self.refresh_authentication()
-                except (aiohttp.ClientError, TimeoutError):
-                    raise OwletConnectionError(
-                        "Owlet credential refresh unavailable"
-                    ) from None
+            with self._request_budget():
+                if self._auth_token == rejected_token:
+                    try:
+                        await self.refresh_authentication()
+                    except (aiohttp.ClientError, TimeoutError):
+                        raise OwletConnectionError(
+                            "Owlet credential refresh unavailable"
+                        ) from None
 
     async def close(self) -> None:
         """Cancel owned activation work without closing HA's shared session."""
@@ -565,9 +574,18 @@ class OwletAPI:
             ]
 
             checks = [
-                self._supported_version(d["device"]["dsn"], versions) for d in devices
+                asyncio.create_task(
+                    self._supported_version(d["device"]["dsn"], versions)
+                )
+                for d in devices
             ]
-            results = await asyncio.gather(*checks)
+            try:
+                results = await asyncio.gather(*checks)
+            finally:
+                for task in checks:
+                    if not task.done():
+                        task.cancel()
+                await asyncio.gather(*checks, return_exceptions=True)
 
             valid_devices = [
                 {**device, "verified_version": version}
@@ -675,35 +693,68 @@ class OwletAPI:
             raise OwletReadOnlyError(
                 f"Refusing {method} {url}: only {sorted(WRITABLE_PROPERTIES)} may be written"
             )
+        with self._request_budget():
+            await self.authenticate()
+            self._check_backoff()
+            rejected_token = self._auth_token
+            reply = await self._send(method, url, data)
+
+            if reply.status == 401:
+                await self._refresh_rejected_token(rejected_token)
+                self._check_backoff()
+                reply = await self._send(method, url, data)
+
+            if reply.status == 401:
+                raise OwletAuthenticationError("Owlet API rejected the token (401)")
+            self._raise_for_status(reply)
+            self._transient_failures = 0
+            return reply.body
+
+    def _check_backoff(self) -> None:
         remaining = self._request_not_before - time.monotonic()
         if remaining > 0:
             raise OwletRateLimitError(
                 "Owlet requests are backed off", retry_after=remaining
             )
-        await self.authenticate()
-        rejected_token = self._auth_token
-        reply = await self._send(method, url, data)
 
-        if reply.status == 401:
-            await self._refresh_rejected_token(rejected_token)
-            reply = await self._send(method, url, data)
+    def _record_failure(self, error: OwletConnectionError) -> None:
+        now = time.monotonic()
+        if self._request_not_before > now:
+            if error.retry_after:
+                self._request_not_before = max(
+                    self._request_not_before, now + error.retry_after
+                )
+            return
+        self._transient_failures += 1
+        delay = max(
+            min(5 * 2 ** min(self._transient_failures - 1, 6), 300),
+            error.retry_after or (60 if isinstance(error, OwletRateLimitError) else 0),
+        )
+        self._request_not_before = now + delay
 
-        if reply.status == 401:
-            raise OwletAuthenticationError(
-                f"Owlet API rejected the token ({reply.status})"
-            )
+    @contextmanager
+    def _request_budget(self):
+        """Fail fast during shared cooldowns; never sleep while holding a lock."""
+        self._check_backoff()
         try:
-            self._raise_for_status(reply)
-        except OwletRateLimitError as err:
-            self._request_not_before = time.monotonic() + (err.retry_after or 60)
+            yield
+        except OwletPermissionError:
             raise
-        return reply.body
+        except OwletConnectionError as error:
+            self._record_failure(error)
+            raise
+        except (aiohttp.ClientError, TimeoutError):
+            error = OwletConnectionError("Error connecting to Owlet")
+            self._record_failure(error)
+            raise error from None
 
     @staticmethod
     def _raise_for_status(reply: _Reply) -> None:
         """Raise the matching transient error for an unsuccessful reply."""
         if (error := _transient_error(reply.status, reply.headers)) is not None:
             raise error
+        if reply.status == 403:
+            raise OwletPermissionError("Owlet API denied device access (403)")
         if reply.status not in (200, 201):
             raise OwletConnectionError(f"Owlet API returned status {reply.status}")
 

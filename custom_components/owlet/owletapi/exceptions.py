@@ -8,17 +8,17 @@ class OwletConnectionError(OwletError):
     Transient: the caller should retry later, never ask for the login again.
     """
 
-
-class OwletRateLimitError(OwletConnectionError):
-    """When the Owlet cloud or the login service rate limited the request.
-
-    retry_after is the number of seconds the service asked us to wait, when
-    it said so.
-    """
-
     def __init__(self, message: str = "", retry_after: float | None = None) -> None:
         super().__init__(message)
         self.retry_after = retry_after
+
+
+class OwletPermissionError(OwletConnectionError):
+    """One forbidden device must not pause other devices on the account."""
+
+
+class OwletRateLimitError(OwletConnectionError):
+    """Requests are paused until the shared account cooldown expires."""
 
 
 class OwletAuthenticationError(OwletError):
