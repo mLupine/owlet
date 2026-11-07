@@ -1,0 +1,21 @@
+phase	decision	reason	evidence	verification
+frame	Preserve serial identity and schema v2	Existing registry/history compatibility	baseline source and mLupine report	pending upgrade tests
+frame	Use parent beads issue owlet-ocq	Parent owns tracking; no independent initialization	implementation brief	no beads mutation
+frame	No git operations	Session developer hook prohibits git despite user requesting commits	bd prime Git authority	prepare attribution bodies for parent
+client	Bundle adapted idomp/Lucas MIT client	External latest 2025.4.10 still has unsafe coercion and no shared auth lock	Installed external source and refreshed fork source	Fixture HTTP plus loopback HA tests
+options	Live settings apply; no credential reload	Preserve entities and avoid rediscovery on token rotation	bypatrick-de live listener; Wiggi defaults	Actual elapsed-time rescheduling test
+freshness	Map every periodic field to its actual raw source	Aggregate battery time cannot keep an old vital current	idomp/Lucas mappings; mixed-age defects	Nearest-expiry and partial-repair tests
+freshness	Standalone boolean events do not expire only because their timestamp is unchanged	Unchanged event time is not necessarily stale measurement	Ayla event property layout; no live semantics assumed	Documented event allowlist and mixed-age tests
+controls	Keep BASE_STATION_ON_CMD and compare cloud readback	Existing controls are part of upgrade contract	Lucas/original Sock command payload	Service calls plus local HTTP readback
+position	Opt-in isolated 60-second historical coordinator	Extra HTTP must never delay primary telemetry	WilliamsJChris route with known mapping/age defects	Ambiguity, cache, expiry and cancellation tests
+position	Unknown codes never map to tummy	No bounded tummy-code evidence in source	WilliamsJChris decoder falls through every other value	Negative, boolean, unknown and future sample tests
+compatibility	HA minimum 2024.12.5	Oldest runtime tested; do not claim untested 2024.1	Installed 2024.12.5 and 2026.10.2 profiles	Full matrix results recorded in validation.md
+attribution	Prepare original-author commit bodies; do not commit	Developer hook forbids all git operations	Live commit metadata retained verbatim	Parent must create reviewed commits
+validation	Preserve legacy whitespace account identity but compare normalized account data for duplicates	Avoid duplicate account creation without rewriting existing v2 IDs	Final source review	Explicit duplicate and reconfigure tests
+validation	Never shorten long configured polling during backoff	A one-hour interval must not become five minutes after failure	Final source review	Long-interval failure regression
+validation	Run both profiles after installing hashed locks	Prove selected dependency environments rather than previous mutable installs	uv pip sync and pip check	148 passes per profile
+packaging	Keep flat HACS ZIP and separate optional examples	Existing HACS upgrade layout must remain usable	Builder and archive inspection	28 files, repeated checksum equality
+2026-11-07T18:22:31.281012+00:00	review	Fix change-only freshness, missing-first vital health and optional identity contention	Coder review found real fixture and concurrency mismatches	/tmp/owlet-superintegration-coder-review.md; tests/test_superintegration.py; tests/test_api_contract.py	87 focused tests passed; full matrix pending
+2026-11-07	compatibility	Restore verified 2024.1.2 floor with FlowResult and legacy migration API	Old runtime lacks ConfigFlowResult and version update keyword	Three hashed profiles; docs/test-results-2024-1.txt	153 passed per profile; 2024.1.0 and .1 untested
+2026-11-07T18:26:14.710534+00:00	attribution	Restore deleted original-author metadata and pending commit descriptions	User explicitly requires attribution in commit messages; source notices alone are insufficient	docs/source-authors.json; docs/commit-attribution.md	recovered from live commit API; commits remain prohibited
+2026-11-07T18:30:18.556298+00:00	review	Correct invalid vital health and discovery/setup lifecycle gaps	Second independent review reproduced false-healthy states and leaked optional tasks	/tmp/owlet-superintegration-coder-rereview.md; tests/test_superintegration.py; tests/test_api_contract.py	fixes implemented with regression coverage

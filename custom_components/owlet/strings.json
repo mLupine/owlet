@@ -9,9 +9,16 @@
         }
       },
       "reauth_confirm": {
-        "title": "Reauthentiaction required for Owlet",
+        "title": "Reauthentication required for Owlet",
         "data": {
           "password": "[%key:common::config_flow::data::password%]"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Owlet region",
+        "data": {
+          "region": "Region",
+          "password": "Password"
         }
       }
     },
@@ -20,11 +27,14 @@
       "invalid_email": "Entered email address is incorrect",
       "invalid_password": "Entered password is incorrect",
       "invalid_credentials": "Entered credentials are incorrect",
-      "unknown": "Unknown error occured"
+      "unknown": "Unknown error occured",
+      "no_devices": "No supported Owlet devices found",
+      "rate_limited": "Owlet is rate limiting requests. Try again later."
     },
     "abort": {
       "already_configured": "Device already configured",
-      "reauth_successful": "Reauthentication successful"
+      "reauth_successful": "Reauthentication successful",
+      "reconfigure_successful": "Reconfiguration successful"
     }
   },
   "options": {
@@ -32,9 +42,15 @@
       "init": {
         "title": "Configure options for Owlet",
         "data": {
-          "pollinterval": "Polling interval in seconds, min 10"
+          "scan_interval": "Polling interval in seconds (5–3600)",
+          "stale_threshold": "Measurement freshness limit in minutes (0 disables)",
+          "activation_interval": "APP_ACTIVE cadence in seconds (10–600)",
+          "body_position": "Enable experimental historical body position"
         }
       }
+    },
+    "error": {
+      "invalid_options": "Enter values within the displayed limits."
     }
   },
   "entity": {
@@ -74,6 +90,48 @@
       },
       "awake": {
         "name": "Awake"
+      },
+      "data_stale": {
+        "name": "Data stale"
+      },
+      "base_station_on": {
+        "name": "Base station on"
+      },
+      "discomfort_alrt": {
+        "name": "Discomfort alert"
+      },
+      "low_integ_read": {
+        "name": "Low integrity reading"
+      },
+      "preview_high_alarm": {
+        "name": "Preview high priority alarm"
+      },
+      "preview_med_alarm": {
+        "name": "Preview medium priority alarm"
+      },
+      "preview_low_alarm": {
+        "name": "Preview low priority alarm"
+      },
+      "preview_drm_alarm": {
+        "name": "Preview DRM priority alarm"
+      },
+      "discomfort_alert": {
+        "name": "Discomfort alert"
+      },
+      "low_integrity_reading": {
+        "name": "Low integrity reading"
+      },
+      "preview_high_priority_alarm": {
+        "name": "Preview high priority alarm"
+      },
+      "preview_medium_priority_alarm": {
+        "name": "Preview medium priority alarm"
+      },
+      "preview_low_priority_alarm": {
+        "name": "Preview low priority alarm"
+      },
+      "preview_drm_priority_alarm": {
+        "name": "Preview DRM priority alarm"
       }
     },
     "sensor": {
@@ -112,12 +170,49 @@
       },
       "movementbucket": {
         "name": "Movement bucket"
+      },
+      "last_updated": {
+        "name": "Last reading"
+      },
+      "last_red_alert": {
+        "name": "Last red alert"
+      },
+      "alerts_mask": {
+        "name": "Alerts mask"
+      },
+      "base_mon_status": {
+        "name": "Base monitoring status"
+      },
+      "battery_status": {
+        "name": "Battery status"
+      },
+      "bodyposition": {
+        "name": "Body position (experimental)",
+        "state": {
+          "no_data": "No data",
+          "moving": "Moving",
+          "undetected": "Undetected",
+          "on_back": "On back",
+          "on_side": "On side"
+        }
+      },
+      "base_monitoring_status": {
+        "name": "Base monitoring status"
+      },
+      "red_alert_updated_at": {
+        "name": "Red alert property updated at"
       }
     },
     "switch": {
       "base_on": {
         "name": "Base station on"
       }
+    }
+  },
+  "issues": {
+    "stale_data": {
+      "title": "Owlet readings are stale or missing source times",
+      "description": "One or more expected readings have no recent source timestamp. Check the Owlet app and device connection. Home Assistant cannot establish current measurements from this response."
     }
   }
 }

@@ -1,0 +1,8 @@
+Owlet brand images copied unchanged from home-assistant/brands.
+Source commit: 3f75f91202d6e0f94c9cdae55c6fa776ae838672
+Source directory: custom_integrations/owlet
+https://github.com/home-assistant/brands/tree/3f75f91202d6e0f94c9cdae55c6fa776ae838672/custom_integrations/owlet
+
+The original images were removed from the central brands repository on
+2026-10-20 as part of the custom integration brand migration.
+Owlet names and logos belong to their respective owners.

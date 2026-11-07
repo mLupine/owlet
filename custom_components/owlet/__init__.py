@@ -1,130 +1,142 @@
 """The Owlet Smart Sock integration."""
 
-from __future__ import annotations
-
 import asyncio
-import logging
-
-from pyowletapi.api import OwletAPI
-from pyowletapi.exceptions import (
-    OwletAuthenticationError,
-    OwletConnectionError,
-    OwletDevicesError,
-    OwletEmailError,
-    OwletPasswordError,
-)
-from pyowletapi.sock import Sock
+from inspect import signature
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    CONF_API_TOKEN,
-    CONF_REGION,
-    CONF_SCAN_INTERVAL,
-    CONF_USERNAME,
-    Platform,
-)
-from homeassistant.core import HomeAssistant
+from homeassistant.const import CONF_API_TOKEN, CONF_REGION, CONF_USERNAME, Platform
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .const import CONF_OWLET_EXPIRY, CONF_OWLET_REFRESH, DOMAIN, SUPPORTED_VERSIONS
-from .coordinator import OwletCoordinator
+from .const import (
+    CONF_OWLET_EXPIRY,
+    CONF_OWLET_REFRESH,
+    DOMAIN,
+    SUPPORTED_VERSIONS,
+    account_unique_id,
+    find_account_entry,
+)
+from .coordinator import OwletCoordinator, store_tokens
+from .owletapi.api import OwletAPI
+from .owletapi.exceptions import (
+    OwletAuthenticationError,
+    OwletCredentialsError,
+    OwletError,
+)
+from .owletapi.sock import Sock
 
-PLATFORMS: list[Platform] = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
-
-_LOGGER = logging.getLogger(__name__)
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
-    """Migrate old entry to new format."""
-    _LOGGER.debug(
-        "Migrating configuration from version %s.%s",
-        config_entry.version,
-        config_entry.minor_version,
-    )
-
-    if config_entry.version == 1:
-        # Version 1 used email-only unique_id, version 2 includes region prefix
-        region = config_entry.data.get(CONF_REGION, "world")
-        old_unique_id = config_entry.unique_id
-        new_unique_id = f"{region}_{old_unique_id}"
-
+    """Qualify valid legacy accounts without changing data or registry identity."""
+    if config_entry.version == 2:
+        return True
+    if config_entry.version != 1:
+        return False
+    region = config_entry.data.get(CONF_REGION)
+    username = config_entry.data.get(CONF_USERNAME)
+    if (
+        region not in ("world", "europe")
+        or not isinstance(username, str)
+        or not username.strip()
+    ):
+        return False
+    unique_id = account_unique_id(region, username)
+    if find_account_entry(hass, region, username, config_entry.entry_id) is not None:
+        return False
+    if "version" in signature(hass.config_entries.async_update_entry).parameters:
         hass.config_entries.async_update_entry(
-            config_entry, unique_id=new_unique_id, version=2
+            config_entry, unique_id=unique_id, version=2
         )
-
-        _LOGGER.debug(
-            "Migration to version 2 successful: unique_id %s -> %s",
-            old_unique_id,
-            new_unique_id,
-        )
-
+    else:
+        config_entry.version = 2
+        hass.config_entries.async_update_entry(config_entry, unique_id=unique_id)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Owlet Smart Sock from a config entry."""
+    """Create one shared authenticated client and independent device coordinators."""
     hass.data.setdefault(DOMAIN, {})
-
-    owlet_api = OwletAPI(
-        region=entry.data[CONF_REGION],
-        token=entry.data[CONF_API_TOKEN],
-        expiry=entry.data[CONF_OWLET_EXPIRY],
-        refresh=entry.data[CONF_OWLET_REFRESH],
-        session=async_get_clientsession(hass),
-    )
-
+    api = None
+    coordinators = {}
+    setup_complete = False
     try:
-        if token := await owlet_api.authenticate():
-            hass.config_entries.async_update_entry(entry, data={**entry.data, **token})
-
-        devices = await owlet_api.get_devices(SUPPORTED_VERSIONS)
-
-    except (OwletAuthenticationError, OwletEmailError, OwletPasswordError) as err:
-        _LOGGER.error("Credentials no longer valid, please setup owlet again")
+        api = OwletAPI(
+            region=entry.data[CONF_REGION],
+            token=entry.data.get(CONF_API_TOKEN),
+            expiry=entry.data.get(CONF_OWLET_EXPIRY),
+            refresh=entry.data.get(CONF_OWLET_REFRESH),
+            session=async_get_clientsession(hass),
+        )
+        api.tokens_updated = lambda tokens: store_tokens(hass, entry, tokens)
+        returned_tokens = await api.authenticate()
+        if isinstance(returned_tokens, dict):
+            store_tokens(hass, entry, returned_tokens)
+        devices = await api.get_devices(SUPPORTED_VERSIONS)
+        if isinstance(devices.get("tokens"), dict):
+            store_tokens(hass, entry, devices["tokens"])
+        for device in devices["response"]:
+            sock = Sock(api, device["device"], device.get("verified_version"))
+            coordinators[sock.serial] = OwletCoordinator(hass, sock, entry)
+        if not coordinators:
+            raise ConfigEntryNotReady("No supported Owlet devices found")
+        refresh_tasks = [
+            asyncio.create_task(coordinator.async_config_entry_first_refresh())
+            for coordinator in coordinators.values()
+        ]
+        try:
+            await asyncio.gather(*refresh_tasks)
+        finally:
+            for task in refresh_tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*refresh_tasks, return_exceptions=True)
+        setup_complete = True
+    except (OwletAuthenticationError, OwletCredentialsError):
         raise ConfigEntryAuthFailed(
-            f"Credentials expired for {entry.data[CONF_USERNAME]}"
-        ) from err
-
-    except OwletConnectionError as err:
-        raise ConfigEntryNotReady(
-            f"Error connecting to {entry.data[CONF_USERNAME]}"
-        ) from err
-
-    except OwletDevicesError:
-        _LOGGER.error("No owlet devices found to set up")
-        return False
-
-    if "tokens" in devices:
-        hass.config_entries.async_update_entry(
-            entry, data={**entry.data, **devices["tokens"]}
-        )
-
-    scan_interval = entry.options.get(CONF_SCAN_INTERVAL)
-    coordinators = {
-        device["device"]["dsn"]: OwletCoordinator(
-            hass, Sock(owlet_api, device["device"]), scan_interval, entry
-        )
-        for device in devices["response"]
-    }
-
-    await asyncio.gather(
-        *(
-            coordinator.async_config_entry_first_refresh()
-            for coordinator in list(coordinators.values())
-        )
-    )
-
+            "Owlet authentication expired; sign in again"
+        ) from None
+    except (OwletError, TimeoutError):
+        raise ConfigEntryNotReady("Unable to retrieve Owlet devices") from None
+    finally:
+        if api is not None:
+            store_tokens(hass, entry, api.tokens)
+        if not setup_complete:
+            for coordinator in coordinators.values():
+                coordinator.shutdown()
+                await coordinator.async_stop_body_position()
+            if api is not None:
+                await api.close()
     hass.data[DOMAIN][entry.entry_id] = coordinators
+    entry.async_on_unload(entry.add_update_listener(async_update_options))
 
+    @callback
+    def stop_coordinators():
+        for coordinator in coordinators.values():
+            coordinator.shutdown()
+
+    entry.async_on_unload(stop_coordinators)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
+    for coordinator in coordinators.values():
+        coordinator.configure_body_position()
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
+async def async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Apply only changed runtime options; credential writes never reload platforms."""
+    for coordinator in hass.data.get(DOMAIN, {}).get(entry.entry_id, {}).values():
+        await coordinator.async_apply_options()
 
-    return unload_ok
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
+        return False
+    coordinators = hass.data[DOMAIN].pop(entry.entry_id, {})
+    for coordinator in coordinators.values():
+        coordinator.shutdown()
+        await coordinator.async_stop_body_position()
+    if coordinators:
+        await next(iter(coordinators.values())).sock.api.close()
+    return True

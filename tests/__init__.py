@@ -1,15 +1,10 @@
 """Tests for the Owlet integration."""
+
 from __future__ import annotations
 
 import json
 from unittest.mock import patch
 
-from homeassistant.components.owlet.const import (
-    CONF_OWLET_EXPIRY,
-    CONF_OWLET_REFRESH,
-    DOMAIN,
-    POLLING_INTERVAL,
-)
 from homeassistant.const import (
     CONF_API_TOKEN,
     CONF_REGION,
@@ -17,8 +12,16 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import HomeAssistant
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from tests.common import MockConfigEntry, load_fixture
+from custom_components.owlet.const import (
+    CONF_OWLET_EXPIRY,
+    CONF_OWLET_REFRESH,
+    DOMAIN,
+    POLLING_INTERVAL,
+)
+
+from .fixture_data import load_fixture
 
 
 async def async_init_integration(
@@ -40,20 +43,33 @@ async def async_init_integration(
             CONF_OWLET_EXPIRY: 100,
             CONF_OWLET_REFRESH: "refresh_token",
         },
-        options={CONF_SCAN_INTERVAL: POLLING_INTERVAL},
+        options={CONF_SCAN_INTERVAL: POLLING_INTERVAL, "stale_threshold": 0},
     )
 
     entry.add_to_hass(hass)
 
     if not skip_setup:
-        with patch(
-            "homeassistant.components.owlet.OwletAPI.get_properties",
-            return_value=json.loads(load_fixture(properties_fixture, "owlet")),
-        ), patch(
-            "homeassistant.components.owlet.OwletAPI.authenticate", return_value=None
-        ), patch(
-            "homeassistant.components.owlet.OwletAPI.get_devices",
-            return_value=json.loads(load_fixture(devices_fixture, "owlet")),
+
+        async def devices(api, versions):
+            result = json.loads(load_fixture(devices_fixture))
+            if isinstance(result.get("tokens"), dict):
+                token = result["tokens"]
+                api._update_tokens(
+                    token["api_token"], token["expiry"], token["refresh"]
+                )
+            return result
+
+        with (
+            patch(
+                "custom_components.owlet.OwletAPI.get_properties",
+                return_value=json.loads(load_fixture(properties_fixture, "owlet")),
+            ),
+            patch("custom_components.owlet.OwletAPI.authenticate", return_value=None),
+            patch(
+                "custom_components.owlet.OwletAPI.get_devices",
+                autospec=True,
+                side_effect=devices,
+            ),
         ):
             await hass.config_entries.async_setup(entry.entry_id)
             await hass.async_block_till_done()

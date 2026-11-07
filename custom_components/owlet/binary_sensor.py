@@ -15,10 +15,10 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
 from .coordinator import OwletCoordinator
-from .entity import OwletBaseEntity
+from .entity import OwletBaseEntity, discover_entities
 
 
-@dataclass(kw_only=True)
+@dataclass(frozen=True, kw_only=True)
 class OwletBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Represent the owlet binary sensor entity description."""
 
@@ -94,6 +94,24 @@ SENSORS: tuple[OwletBinarySensorEntityDescription, ...] = (
     ),
 )
 
+SENSORS += tuple(
+    OwletBinarySensorEntityDescription(
+        key=key,
+        translation_key=key,
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        available_during_charging=True,
+    )
+    for key in (
+        "discomfort_alert",
+        "low_integrity_reading",
+        "preview_high_priority_alarm",
+        "preview_medium_priority_alarm",
+        "preview_low_priority_alarm",
+        "preview_drm_priority_alarm",
+    )
+)
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -102,20 +120,18 @@ async def async_setup_entry(
 ) -> None:
     """Set up the owlet sensors from config entry."""
 
-    coordinators: OwletCoordinator = hass.data[DOMAIN][config_entry.entry_id].values()
-
-    sensors = []
-    for coordinator in coordinators:
-        sensors.extend([
-            OwletBinarySensor(coordinator, sensor)
-            for sensor in SENSORS
-            if sensor.key in coordinator.sock.properties
-        ])
-
-        if OwletAwakeSensor.entity_description.key in coordinator.sock.properties:
-            sensors.append(OwletAwakeSensor(coordinator))
-
-    async_add_entities(sensors)
+    for coordinator in hass.data[DOMAIN][config_entry.entry_id].values():
+        factories = {
+            description.key: lambda description=description, coordinator=coordinator: (
+                OwletBinarySensor(coordinator, description)
+            )
+            for description in SENSORS
+        }
+        factories["sleep_state"] = lambda coordinator=coordinator: OwletAwakeSensor(
+            coordinator
+        )
+        discover_entities(config_entry, coordinator, async_add_entities, factories)
+        async_add_entities([OwletStaleSensor(coordinator)])
 
 
 class OwletBinarySensor(OwletBaseEntity, BinarySensorEntity):
@@ -134,16 +150,20 @@ class OwletBinarySensor(OwletBaseEntity, BinarySensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return super().available and (
-            not self.sock.properties["charging"]
-            or self.entity_description.available_during_charging
+        return (
+            super().available
+            and self.coordinator.reading_available(self.entity_description.key)
+            and (
+                self.sock.properties.get("charging") is False
+                or self.entity_description.available_during_charging
+            )
         )
 
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
 
-        return self.sock.properties[self.entity_description.key]
+        return self.sock.properties.get(self.entity_description.key)
 
 
 class OwletAwakeSensor(OwletBinarySensor):
@@ -166,4 +186,43 @@ class OwletAwakeSensor(OwletBinarySensor):
     @property
     def is_on(self) -> bool:
         """Return true if the binary sensor is on."""
-        return self.sock.properties[self.entity_description.key] not in [8, 15]
+        value = self.sock.properties.get(self.entity_description.key)
+        return value == 1 if type(value) is int and value in (1, 8, 15) else None
+
+
+class OwletStaleSensor(OwletBinarySensor):
+    """Flag stale or unknown expected measurements, independently of poll success."""
+
+    def __init__(self, coordinator):
+        from homeassistant.const import EntityCategory
+
+        super().__init__(
+            coordinator,
+            OwletBinarySensorEntityDescription(
+                key="data_stale",
+                translation_key="data_stale",
+                device_class=BinarySensorDeviceClass.PROBLEM,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                available_during_charging=True,
+            ),
+        )
+
+    @property
+    def available(self):
+        return True
+
+    @property
+    def is_on(self):
+        return self.coordinator.is_stale
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "affected_readings": self.coordinator.affected_vitals,
+            "readings_expected": self.coordinator.readings_expected,
+            "poll_success": self.coordinator.last_update_success,
+            "freshness": {
+                key: self.coordinator.reading_status(key)
+                for key in ("heart_rate", "oxygen_saturation")
+            },
+        }

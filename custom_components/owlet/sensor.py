@@ -23,10 +23,10 @@ from homeassistant.helpers.typing import StateType
 
 from .const import DOMAIN, SLEEP_STATES
 from .coordinator import OwletCoordinator
-from .entity import OwletBaseEntity
+from .entity import OwletBaseEntity, discover_entities
 
 
-@dataclass(kw_only=True)
+@dataclass(frozen=True, kw_only=True)
 class OwletSensorEntityDescription(SensorEntityDescription):
     """Represent the owlet sensor entity description."""
 
@@ -100,6 +100,14 @@ SENSORS: tuple[OwletSensorEntityDescription, ...] = (
     ),
 )
 
+SENSORS += tuple(
+    OwletSensorEntityDescription(
+        key=key, translation_key=key, available_during_charging=True
+    )
+    for key in ("alerts_mask", "base_monitoring_status", "battery_status")
+)
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -108,28 +116,29 @@ async def async_setup_entry(
 ) -> None:
     """Set up the owlet sensors from config entry."""
 
-    coordinators: list[OwletCoordinator] = list(
-        hass.data[DOMAIN][config_entry.entry_id].values()
-    )
+    for coordinator in hass.data[DOMAIN][config_entry.entry_id].values():
+        factories = {
+            description.key: lambda description=description, coordinator=coordinator: (
+                OwletSensor(coordinator, description)
+            )
+            for description in SENSORS
+        }
+        factories["sleep_state"] = lambda coordinator=coordinator: OwletSleepSensor(
+            coordinator
+        )
+        factories["oxygen_10_av"] = lambda coordinator=coordinator: (
+            OwletOxygenAverageSensor(coordinator)
+        )
+        factories["red_alert_updated_at"] = lambda coordinator=coordinator: (
+            OwletTimestampSensor(coordinator, "red_alert_updated_at")
+        )
+        from .sleep_data import BodyPositionSensor
 
-    sensors = []
-
-    for coordinator in coordinators:
-        sensors.extend([
-            OwletSensor(coordinator, sensor)
-            for sensor in SENSORS
-            if sensor.key in coordinator.sock.properties
-        ])
-
-        if OwletSleepSensor.entity_description.key in coordinator.sock.properties:
-            sensors.append(OwletSleepSensor(coordinator))
-        if (
-            OwletOxygenAverageSensor.entity_description.key
-            in coordinator.sock.properties
-        ):
-            sensors.append(OwletOxygenAverageSensor(coordinator))
-
-    async_add_entities(sensors)
+        factories["body_position"] = lambda coordinator=coordinator: BodyPositionSensor(
+            coordinator
+        )
+        discover_entities(config_entry, coordinator, async_add_entities, factories)
+        async_add_entities([OwletTimestampSensor(coordinator, "last_updated")])
 
 
 class OwletSensor(OwletBaseEntity, SensorEntity):
@@ -148,16 +157,20 @@ class OwletSensor(OwletBaseEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return super().available and (
-            not self.sock.properties["charging"]
-            or self.entity_description.available_during_charging
+        return (
+            super().available
+            and self.coordinator.reading_available(self.entity_description.key)
+            and (
+                self.sock.properties.get("charging") is False
+                or self.entity_description.available_during_charging
+            )
         )
 
     @property
     def native_value(self) -> StateType:
         """Return sensor value."""
 
-        return self.sock.properties[self.entity_description.key]
+        return self.sock.properties.get(self.entity_description.key)
 
 
 class OwletSleepSensor(OwletSensor):
@@ -181,7 +194,7 @@ class OwletSleepSensor(OwletSensor):
     @property
     def native_value(self) -> StateType:
         """Return sensor value."""
-        return SLEEP_STATES[self.sock.properties["sleep_state"]]
+        return SLEEP_STATES.get(self.sock.properties.get("sleep_state"), "unknown")
 
 
 class OwletOxygenAverageSensor(OwletSensor):
@@ -206,14 +219,33 @@ class OwletOxygenAverageSensor(OwletSensor):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            super().available
-            and (
-                not self.sock.properties["charging"]
-                or self.entity_description.available_during_charging
-            )
-            and (
-                self.sock.properties["oxygen_10_av"] >= 0
-                and self.sock.properties["oxygen_10_av"] <= 100
-            )
+        value = self.native_value
+        return super().available and value is not None and 0 <= value <= 100
+
+
+class OwletTimestampSensor(OwletSensor):
+    """Expose source observation times without asserting current freshness."""
+
+    def __init__(self, coordinator, key):
+        from homeassistant.const import EntityCategory
+
+        super().__init__(
+            coordinator,
+            OwletSensorEntityDescription(
+                key=key,
+                translation_key=key,
+                device_class=SensorDeviceClass.TIMESTAMP,
+                entity_category=EntityCategory.DIAGNOSTIC,
+                available_during_charging=True,
+            ),
         )
+
+    @property
+    def available(self):
+        return self.coordinator.last_update_success
+
+    @property
+    def native_value(self):
+        if self.entity_description.key == "last_updated":
+            return self.coordinator.last_updated
+        return self.sock.properties.get(self.entity_description.key)

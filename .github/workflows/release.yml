@@ -1,0 +1,29 @@
+name: Release package
+on:
+  release:
+    types: [published]
+permissions:
+  contents: read
+jobs:
+  validate:
+    uses: ./.github/workflows/tests.yml
+  package:
+    needs: validate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Validate tag and build
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          python3 -c 'import json, os; assert os.environ["RELEASE_TAG"].removeprefix("v") == json.load(open("custom_components/owlet/manifest.json"))["version"]'
+          python3 scripts/build_release.py
+      - name: Attach HACS package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/owlet.zip dist/owlet-examples.zip dist/SHA256SUMS --clobber

@@ -1,0 +1,514 @@
+# Owlet Smart Sock dashboard for Home Assistant, Dutch version.
+#
+# Two views: "Baby" (live values with trend graphs, sock status, Owlet alerts)
+# and "Trends" (last 12 hours, sleep, skin temperature, daily statistics,
+# battery). Uses built-in cards only, no custom cards needed.
+#
+# The entity ids match a Home Assistant set to Dutch, where entity ids are
+# generated from the Dutch entity names (for example "_hartslag"). For an
+# English installation use owlet.yaml instead.
+#
+# Install:
+#   1. Settings > Dashboards > Add dashboard > New dashboard from scratch.
+#   2. Open it, pencil (Edit dashboard) > three dots > Raw configuration editor.
+#   3. Paste this file and replace every "owlet_sock_serial_number" with the
+#      entity id prefix of your sock, for example "slaapkamer_owlet_sok" when
+#      your heart rate entity is sensor.slaapkamer_owlet_sok_hartslag.
+#
+# This is not a medical device. Data is polled from the Owlet cloud and can be
+# delayed or stop without warning. Keep the Owlet base station and app as your
+# primary alert.
+title: Owlet
+
+views:
+  # ============================================================
+  # VIEW 1: LIVE
+  # ============================================================
+  - title: Baby
+    path: baby
+    icon: mdi:baby-face-outline
+    type: sections
+    max_columns: 2
+
+    sections:
+
+      # ========================================================
+      # HERO / LIVE
+      # ========================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Baby
+            icon: mdi:baby-face-outline
+            badges:
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_slaaptoestand
+                icon: mdi:sleep
+                show_state: true
+                color: state
+
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_batterijniveau
+                icon: mdi:battery
+                show_state: true
+                color: state
+
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_huidtemperatuur
+                icon: mdi:thermometer
+                show_state: true
+                color: state
+
+          # Verouderde gegevens: enkel zichtbaar wanneer de cloud geen nieuwe meting stuurt
+          - type: markdown
+            content: >-
+              {% set last = as_datetime(states('sensor.owlet_sock_serial_number_laatste_meting'), none) %}
+              **Verouderde gegevens.** Geen nieuwe meting van de Owlet-cloud sinds
+              {{ as_local(last).strftime('%H:%M') if last else 'onbekend' }}.
+              Kijk in de Owlet-app.
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_verouderde_gegevens
+                state: "on"
+            grid_options:
+              columns: full
+
+          # HARTSLAG
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_hartslag
+            name: Hartslag
+            icon: mdi:heart-pulse
+            color: red
+            vertical: true
+            features:
+              - type: trend-graph
+                hours_to_show: 6
+                detail: true
+
+          # ZUURSTOF
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_o2_saturatie
+            name: Zuurstof
+            icon: mdi:lungs
+            color: light-blue
+            vertical: true
+            features:
+              - type: trend-graph
+                hours_to_show: 6
+                detail: true
+
+          # SLAAPTOESTAND
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_slaaptoestand
+            name: Slaap
+            icon: mdi:sleep
+            color: purple
+
+          # 10 MIN O2 GEMIDDELDE
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_o2_saturatie_gemiddelde_10_minuten
+            name: O₂ gemiddelde
+            icon: mdi:chart-timeline-variant
+            color: light-blue
+
+      # ========================================================
+      # COMFORT
+      # ========================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Comfort
+            icon: mdi:thermometer
+
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_huidtemperatuur
+            name: Huidtemperatuur
+            icon: mdi:thermometer
+            color: orange
+            vertical: true
+            features:
+              - type: trend-graph
+                hours_to_show: 6
+                detail: true
+
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_wakker
+            name: Wakker
+            icon: mdi:eye-outline
+            color: amber
+
+      # ========================================================
+      # SOK / BATTERIJ
+      # ========================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Sok
+            icon: mdi:sock
+            badges:
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_batterijniveau
+                icon: mdi:battery
+                show_state: true
+                color: state
+
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_batterijniveau
+            name: Batterij
+            icon: mdi:battery
+            color: green
+            features:
+              - type: trend-graph
+                hours_to_show: 12
+                detail: false
+
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_resterende_batterijduur
+            name: Resterende batterijduur
+            icon: mdi:timer-outline
+            color: green
+
+          # Enkel zichtbaar tijdens opladen
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_opladen
+            name: Sok wordt opgeladen
+            icon: mdi:battery-charging
+            color: green
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_opladen
+                state: "on"
+
+          # Enkel zichtbaar wanneer de sok uit is
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_sok_uit
+            name: Sok is uit
+            icon: mdi:sock
+            color: orange
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_sok_uit
+                state: "on"
+
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_basisstation_aan
+            name: Basisstation
+            icon: mdi:access-point
+            color: green
+
+      # ========================================================
+      # MELDINGEN
+      # ========================================================
+      - type: grid
+        cards:
+          - type: heading
+            heading: Meldingen
+            icon: mdi:shield-check-outline
+
+          # Geen actieve meldingen
+          - type: markdown
+            content: |
+              ## ✅ Geen actieve Owlet-meldingen
+              De Owlet-cloud meldt momenteel geen alarmen.
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij
+                state: "off"
+
+          # KRITIEK ZUURSTOFGEHALTE (enkel op socks die dit melden)
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
+            name: Kritiek zuurstofgehalte
+            icon: mdi:lungs
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_kritiek_zuurstofgehalte
+                state: "on"
+
+          # LAAG ZUURSTOFGEHALTE
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
+            name: Laag zuurstofgehalte
+            icon: mdi:lungs
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_laag_zuurstofgehalte
+                state: "on"
+
+          # HOOG ZUURSTOFGEHALTE
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
+            name: Hoog zuurstofgehalte
+            icon: mdi:lungs
+            color: orange
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_hoog_zuurstofgehalte
+                state: "on"
+
+          # HOGE HARTSLAG
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
+            name: Hoge hartslag
+            icon: mdi:heart-alert
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_hoge_hartslag
+                state: "on"
+
+          # LAGE HARTSLAG
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
+            name: Lage hartslag
+            icon: mdi:heart-alert
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_hartslag
+                state: "on"
+
+          # SOK NIET VERBONDEN
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
+            name: Sok niet verbonden
+            icon: mdi:wifi-off
+            color: orange
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_sok_niet_verbonden
+                state: "on"
+
+          # STROOMUITVAL
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
+            name: Stroomuitval
+            icon: mdi:power-plug-off
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_stroomuitval
+                state: "on"
+
+          # LAGE BATTERIJ
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
+            name: Batterij bijna leeg
+            icon: mdi:battery-alert
+            color: orange
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_lage_batterij
+                state: "on"
+
+          # KRITIEKE BATTERIJ (enkel op socks die dit melden)
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij
+            name: Batterij kritiek
+            icon: mdi:battery-alert-variant-outline
+            color: red
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_alarm_kritieke_batterij
+                state: "on"
+
+
+  # ============================================================
+  # VIEW 2: TRENDS
+  # ============================================================
+  - title: Trends
+    path: trends
+    icon: mdi:chart-line
+    type: sections
+    max_columns: 2
+
+    sections:
+
+      # ========================================================
+      # VITALE WAARDEN
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Afgelopen 12 uur
+            icon: mdi:heart-pulse
+            badges:
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_hartslag
+                icon: mdi:heart-pulse
+                show_state: true
+                color: red
+
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_o2_saturatie
+                icon: mdi:lungs
+                show_state: true
+                color: light-blue
+
+          - type: history-graph
+            title: Hartslag
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_hartslag
+                name: Hartslag
+            grid_options:
+              columns: full
+
+          - type: history-graph
+            title: Zuurstof
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_o2_saturatie
+                name: O₂
+              - entity: sensor.owlet_sock_serial_number_o2_saturatie_gemiddelde_10_minuten
+                name: Gemiddelde 10 min
+            grid_options:
+              columns: full
+
+      # ========================================================
+      # SLAAP
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Slaap
+            icon: mdi:sleep
+
+          - type: history-graph
+            title: Slaapstatus
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_slaaptoestand
+                name: Slaap
+              - entity: binary_sensor.owlet_sock_serial_number_wakker
+                name: Wakker
+              - entity: binary_sensor.owlet_sock_serial_number_sok_uit
+                name: Sok uit
+            grid_options:
+              columns: full
+
+      # ========================================================
+      # TEMPERATUUR
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Temperatuur
+            icon: mdi:thermometer
+
+          - type: history-graph
+            title: Huidtemperatuur
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_huidtemperatuur
+                name: Huidtemperatuur
+            grid_options:
+              columns: full
+
+      # ========================================================
+      # PER DAG (langetermijnstatistieken)
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Per dag
+            icon: mdi:chart-timeline-variant
+
+          - type: statistics-graph
+            title: Hartslag per dag
+            period: day
+            days_to_show: 30
+            chart_type: line
+            stat_types: [min, mean, max]
+            entities:
+              - entity: sensor.owlet_sock_serial_number_hartslag
+                name: Hartslag
+            grid_options:
+              columns: full
+
+          - type: statistics-graph
+            title: Zuurstof per dag
+            period: day
+            days_to_show: 30
+            chart_type: line
+            stat_types: [min, mean, max]
+            entities:
+              - entity: sensor.owlet_sock_serial_number_o2_saturatie
+                name: O₂
+            grid_options:
+              columns: full
+
+      # ========================================================
+      # BATTERIJ
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Batterij
+            icon: mdi:battery
+            badges:
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_batterijniveau
+                icon: mdi:battery
+                show_state: true
+                color: state
+
+              - type: entity
+                entity: sensor.owlet_sock_serial_number_resterende_batterijduur
+                icon: mdi:timer-outline
+                show_state: true
+
+          - type: history-graph
+            title: Batterij, afgelopen 48 uur
+            hours_to_show: 48
+            entities:
+              - entity: sensor.owlet_sock_serial_number_batterijniveau
+                name: Batterij
+            grid_options:
+              columns: full
+
+      # ========================================================
+      # INFO
+      # ========================================================
+      - type: grid
+        column_span: 2
+        cards:
+          - type: markdown
+            content: |
+              **Owlet in Home Assistant**
+
+              Dit is geen medisch toestel. De gegevens komen via de Owlet-cloud
+              binnen en kunnen vertraagd zijn of zonder waarschuwing stoppen.
+
+              Gebruik voor Owlet-alarmen altijd de officiële Owlet-app en het basisstation.

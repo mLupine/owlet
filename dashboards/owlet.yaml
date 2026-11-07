@@ -1,0 +1,281 @@
+# Owlet Smart Sock dashboard for Home Assistant.
+#
+# Uses built-in cards only, no custom cards needed.
+#
+# Install:
+#   1. Settings > Dashboards > Add dashboard > New dashboard from scratch.
+#   2. Open it, three dots > Edit dashboard > three dots > Raw configuration editor.
+#   3. Paste this file and replace every "owlet_sock_serial_number" with the
+#      entity id prefix of your sock (for example "owlet_sock_ab12cd34", or
+#      "nursery_owlet_sock_ab12cd34" when Home Assistant added the area), see
+#      Settings > Devices & services > Owlet Smart Sock > your sock > entities.
+#
+# This is not a medical device. Data is polled from the Owlet cloud and can be
+# delayed or stop without warning. Keep the Owlet base station and app as your
+# primary alert.
+title: Owlet
+views:
+  - title: Owlet
+    path: owlet
+    icon: mdi:baby-face-outline
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Now
+            icon: mdi:heart-pulse
+          - type: markdown
+            content: >-
+              {% set last = as_datetime(states('sensor.owlet_sock_serial_number_last_reading'), none) %}
+              **Readings are stale.** No new data from the Owlet cloud since
+              {{ as_local(last).strftime('%H:%M') if last else 'unknown' }}.
+              Check the Owlet app.
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_data_stale
+                state: "on"
+          - type: gauge
+            entity: sensor.owlet_sock_serial_number_heart_rate
+            name: Heart rate
+            min: 40
+            max: 220
+            needle: true
+          - type: gauge
+            entity: sensor.owlet_sock_serial_number_o2_saturation
+            name: O2 saturation
+            min: 70
+            max: 100
+            needle: true
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_o2_saturation_10_minute_average
+            name: O2 10 min average
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_skin_temperature
+            name: Skin temperature
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_sleep_state
+            name: Sleep state
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_sock_off
+            name: Sock off
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_charging
+            name: Charging
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_base_station_on
+            name: Base station
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Owlet alerts
+            icon: mdi:alert
+          - type: markdown
+            content: No Owlet alerts active.
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_critical_oxygen_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_oxygen_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_high_oxygen_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_high_heart_rate_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_heart_rate_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_sock_disconnected_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_lost_power_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_battery_alert
+                state: "off"
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_critical_battery_alert
+                state: "off"
+          # Each alert only shows while Owlet reports it as active.
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_critical_oxygen_alert
+            name: Critical oxygen
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_critical_oxygen_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_low_oxygen_alert
+            name: Low oxygen
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_oxygen_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_high_oxygen_alert
+            name: High oxygen
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_high_oxygen_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_high_heart_rate_alert
+            name: High heart rate
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_high_heart_rate_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_low_heart_rate_alert
+            name: Low heart rate
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_heart_rate_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_sock_disconnected_alert
+            name: Sock disconnected
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_sock_disconnected_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_lost_power_alert
+            name: Base station lost power
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_lost_power_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_low_battery_alert
+            name: Low battery
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_low_battery_alert
+                state: "on"
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_critical_battery_alert
+            name: Critical battery
+            visibility:
+              - condition: state
+                entity: binary_sensor.owlet_sock_serial_number_critical_battery_alert
+                state: "on"
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Last 12 hours
+            icon: mdi:chart-line
+          # One unit per graph: heart rate and O2 are never plotted on two axes.
+          - type: history-graph
+            title: Heart rate
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_heart_rate
+                name: Heart rate
+            grid_options:
+              columns: full
+          - type: history-graph
+            title: O2 saturation
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_o2_saturation
+                name: O2 saturation
+              - entity: sensor.owlet_sock_serial_number_o2_saturation_10_minute_average
+                name: 10 min average
+            grid_options:
+              columns: full
+          - type: history-graph
+            title: Sleep
+            hours_to_show: 12
+            entities:
+              - entity: sensor.owlet_sock_serial_number_sleep_state
+                name: Sleep state
+              - entity: binary_sensor.owlet_sock_serial_number_sock_off
+                name: Sock off
+              - entity: binary_sensor.owlet_sock_serial_number_data_stale
+                name: Data stale
+            grid_options:
+              columns: full
+
+      - type: grid
+        column_span: 2
+        cards:
+          - type: heading
+            heading: Trends
+            icon: mdi:chart-timeline-variant
+          # Long-term statistics, kept by Home Assistant beyond the recorder purge.
+          - type: statistics-graph
+            title: Heart rate per day
+            period: day
+            days_to_show: 30
+            chart_type: line
+            stat_types: [min, mean, max]
+            entities:
+              - entity: sensor.owlet_sock_serial_number_heart_rate
+                name: Heart rate
+            grid_options:
+              columns: full
+          - type: statistics-graph
+            title: O2 saturation per day
+            period: day
+            days_to_show: 30
+            chart_type: line
+            stat_types: [min, mean, max]
+            entities:
+              - entity: sensor.owlet_sock_serial_number_o2_saturation
+                name: O2 saturation
+            grid_options:
+              columns: full
+          - type: statistics-graph
+            title: Skin temperature per day
+            period: day
+            days_to_show: 30
+            chart_type: line
+            stat_types: [min, mean, max]
+            entities:
+              - entity: sensor.owlet_sock_serial_number_skin_temperature
+                name: Skin temperature
+            grid_options:
+              columns: full
+
+      - type: grid
+        cards:
+          - type: heading
+            heading: Device
+            icon: mdi:battery-heart-variant
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_battery_percentage
+            name: Battery
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_battery_remaining
+            name: Battery remaining
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_signal_strength
+            name: Signal
+          - type: tile
+            entity: sensor.owlet_sock_serial_number_last_reading
+            name: Last reading
+          - type: tile
+            entity: binary_sensor.owlet_sock_serial_number_data_stale
+            name: Data stale
+          - type: history-graph
+            title: Battery
+            hours_to_show: 48
+            entities:
+              - entity: sensor.owlet_sock_serial_number_battery_percentage
+                name: Battery
+            grid_options:
+              columns: full
+          - type: markdown
+            content: >-
+              This is not a medical device. Data is polled from the Owlet cloud
+              and can be delayed or stop without warning. Keep the Owlet base
+              station and app as your primary alert.

@@ -1,0 +1,33 @@
+Owlet integration for Home Assistant
+
+Originally created by Ryan Clark in https://github.com/ryanbdclark/owlet,
+licensed under the Apache License 2.0. See LICENSE.
+
+This mLupine superintegration adapts contributions and fixes from:
+https://github.com/LucasVollebergh/owlet
+https://github.com/idomp/owlet
+https://github.com/Wiggi26/owlet
+https://github.com/bypatrick-de/owlet
+https://github.com/Rogash1/owlet
+https://github.com/WilliamsJChris/owlet
+https://github.com/batas/owlet
+https://github.com/soschlegel/owlet
+https://github.com/mLupine/owlet
+
+Exact source commits, original Git author metadata, adoption boundaries and
+adaptations are recorded in docs/fork-adoption.md and docs/fork-adoption.tsv. Overlapping fixes are not claimed as new work.
+
+custom_components/owlet/owletapi adapts the bundled client from
+LucasVollebergh/owlet and idomp/owlet. It derives from pyowletapi-ng at
+https://github.com/lucasvollebergh/pyowletapi, based on Ryan Clark's pyowletapi.
+Copyright (c) 2022 ryanbdclark; Copyright (c) 2026 Lucas Vollebergh.
+See custom_components/owlet/owletapi/LICENSE for its MIT license.
+
+Historical position acquisition is adapted from Chris Williams's
+WilliamsJChris/owlet commit 6de3bc276c445f9f0c7cd11d5a89ff811d1aa9be.
+Dashboard and notification examples derive from Lucas Vollebergh/idomp.
+Brand assets retain their separate source/trademark provenance in
+custom_components/owlet/brand/SOURCE.txt. No trademark license is asserted.
+
+The body-position implementation also credits kirill kulakov (kirill578),
+as recorded in the WilliamsJChris source commit coauthor trailer.
