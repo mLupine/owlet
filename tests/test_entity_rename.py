@@ -89,6 +89,13 @@ async def test_legacy_long_interval_survives_setup_and_options(hass, cloud):
         }
     )
     assert validated["scan_interval"] == 7200
+    result = await hass.config_entries.options.async_configure(
+        flow["flow_id"], user_input=validated
+    )
+    await hass.async_block_till_done()
+    assert result["type"] == "create_entry"
+    assert entry.options["scan_interval"] == 7200
+    assert primary.update_interval.total_seconds() == 7200
     assert entry.options["custom"] == "kept"
     assert await hass.config_entries.async_unload(entry.entry_id)
 

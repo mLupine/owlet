@@ -1,6 +1,19 @@
 # Changelog
 
 <!--next-version-placeholder-->
+
+## 2026.11.0b3 (2026-11-07)
+
+- Require Home Assistant 2026.10.2 or newer. Upgrade HA before installing this release.
+- Remove old migration API, options-flow and test-harness compatibility branches, plus both 2024 dependency profiles.
+- Preserve Owlet account migrations, entity identities, recorder history and saved options.
+
+## 2026.11.0b2 (2026-11-07)
+
+- Bound discovery concurrency and isolate rejected devices while retaining healthy siblings.
+- Add shared request cooldown, per-device activation recovery and cancellation/partial-setup cleanup.
+- Improve privacy-aware diagnostics, optional dashboards and exact release-package validation.
+
 ## 2025.4.3 (2025-04-15)
 ### Fix
 * Changes to how the sensors are stored to solve the issue where only one device is added, thanks [`@MarjovanLier`](https://github.com/MarjovanLier). ([`1244bff`](https://github.com/ryanbdclark/owlet/commit/1244bffcb48d7337a9d7a0da518959fe4b31a230))

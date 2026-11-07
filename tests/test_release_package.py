@@ -1,10 +1,12 @@
 """Deterministic packages match the exact allowed candidate source."""
 
 import json
+import re
 import shutil
 from zipfile import ZipFile
 
 import pytest
+from homeassistant.util.yaml import load_yaml
 
 from scripts.build_release import (
     EXAMPLE_FILES,
@@ -14,6 +16,20 @@ from scripts.build_release import (
     validate_manifest,
     verify_source_archive,
 )
+
+
+def test_supported_home_assistant_minimum_agrees_across_installation_surfaces():
+    minimum = json.loads((ROOT / "hacs.json").read_text())["homeassistant"]
+    assert minimum == "2026.10.2"
+    for name in ("README.md", "info.md"):
+        match = re.search(
+            r"Minimum supported Home Assistant:\s*\**(\d+\.\d+\.\d+)",
+            (ROOT / name).read_text(),
+        )
+        assert match is not None, name
+        assert match.group(1) == minimum, name
+    for path in (ROOT / "blueprints").rglob("*.yaml"):
+        assert load_yaml(path)["blueprint"]["homeassistant"]["min_version"] == minimum
 
 
 @pytest.fixture
