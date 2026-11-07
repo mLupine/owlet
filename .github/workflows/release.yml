@@ -20,8 +20,7 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
-          python3 -c 'import json, os; assert os.environ["RELEASE_TAG"].removeprefix("v") == json.load(open("custom_components/owlet/manifest.json"))["version"]'
-          python3 scripts/build_release.py
+          python3 scripts/build_release.py --tag "$RELEASE_TAG"
       - name: Attach HACS package
         env:
           GH_TOKEN: ${{ github.token }}
