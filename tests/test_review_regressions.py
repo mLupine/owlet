@@ -301,9 +301,8 @@ async def test_dutch_translations_and_icon_metadata_load(hass, cloud):
         entity_state(hass, "sensor", "heart_rate").attributes["icon"]
         == "mdi:heart-pulse"
     )
-    if hasattr(icon_helper, "async_get_icons"):
-        loaded = await icon_helper.async_get_icons(hass, "entity", {DOMAIN})
-        assert loaded[DOMAIN]["sensor"]["heartrate"]["default"] == "mdi:heart-pulse"
+    loaded = await icon_helper.async_get_icons(hass, "entity", {DOMAIN})
+    assert loaded[DOMAIN]["sensor"]["heartrate"]["default"] == "mdi:heart-pulse"
 
 
 async def test_cached_matching_state_cannot_confirm_without_a_new_poll(hass, cloud):

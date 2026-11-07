@@ -1,6 +1,5 @@
 """Blueprint schema and startup/recovery notification policy."""
 
-import inspect
 from pathlib import Path
 
 import pytest
@@ -21,11 +20,7 @@ async def test_blueprint_expands_and_validates(hass, name):
     blueprint = Blueprint(
         config,
         expected_domain="automation",
-        **(
-            {"schema": automation_config.AUTOMATION_BLUEPRINT_SCHEMA}
-            if "schema" in inspect.signature(Blueprint).parameters
-            else {}
-        ),
+        schema=automation_config.AUTOMATION_BLUEPRINT_SCHEMA,
     )
     inputs = {"notify_device": "synthetic-phone", "notify_initial_active": True}
     inputs.update(

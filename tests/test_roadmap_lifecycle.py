@@ -116,11 +116,10 @@ async def test_unload_joins_overlapping_manual_and_scheduled_polls(hass, cloud):
     try:
         await started.wait()
         await asyncio.sleep(0)
-        expected = 1 if hasattr(coordinator._debounced_refresh, "async_lock") else 2
-        assert cloud[2].await_count == 1 + expected
+        assert cloud[2].await_count == 2
         assert await hass.config_entries.async_unload(entry.entry_id)
         await asyncio.wait_for(asyncio.gather(*polls, return_exceptions=True), 1)
-        assert cancelled == ["unit-one"] * expected
+        assert cancelled == ["unit-one"]
     finally:
         for task in polls:
             task.cancel()

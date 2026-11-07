@@ -10,7 +10,7 @@ Update the existing `mLupine/owlet` custom repository through HACS. Keep the exi
 
 The integration domain stays `owlet`, account schema stays v2, and existing device/entity unique IDs stay serial-based, including the base-station switch. Credentials, options and registry overrides remain. Tests exercise both v1 migration and v2 upgrade with actual HA registry objects and recorder rows. Valid v1 account IDs migrate automatically; malformed identities, collisions and unsupported future schemas are refused rather than guessed. Back up the HA configuration and recorder before changing versions; an older v1 implementation has no reverse migration for v2 entries.
 
-Minimum tested Home Assistant: **2024.1.2**. Also tested with **2026.10.2**. See [validation](docs/validation.md) for exact environments and limits. The bundled client is MIT licensed; its license ships in the installation archive. The integration retains its Apache-2.0 license.
+Minimum supported Home Assistant: **2026.10.2**. Older releases are no longer supported. Upgrade Home Assistant before installing this version. Existing Owlet account migrations and entity identities are retained. See [validation](docs/validation.md) for exact environments and limits. The bundled client is MIT licensed; its license ships in the installation archive. The integration retains its Apache-2.0 license.
 
 ## Change polling in Home Assistant
 
@@ -22,7 +22,7 @@ Additional options:
 - APP_ACTIVE cadence: **30 seconds** by default, configurable from 10 to 600 seconds. An observed idle APP_ACTIVE value requests reactivation sooner. Writes run separately from read publication and are cancelled on unload. This cadence is an integration policy, not a verified cloud guarantee.
 - Historical body position: **off by default**. Uses a separate 60-second coordinator with a five-minute sample limit. Enabling it never adds HTTP latency to primary telemetry.
 
-On **HA 2024.4 or newer**, the entry menu's **Reconfigure** action can authenticate the same username in a different region while retaining the entry. It refuses an already configured account/region. Reauthentication errors distinguish invalid credentials, connectivity, rate limits and unexpected failures.
+The entry menu's **Reconfigure** action can authenticate the same username in a different region while retaining the entry. It refuses an already configured account/region. Reauthentication errors distinguish invalid credentials, connectivity, rate limits and unexpected failures.
 
 ## Readings and diagnostics
 
@@ -48,9 +48,9 @@ The bounded 0–9 labels are derived from that fork and have not been independen
 
 The [blueprints](blueprints/automation/owlet) send Companion phone notifications. Import them manually and select the intended alert entities/phone. Initial-active notifications explicitly control startup and unavailable/unknown → on recovery; the alert blueprint defaults this option on so an alert appearing after unavailable/unknown still notifies. The stale-data blueprint defaults it off. Each blueprint exposes the choice. Recovery notifications are separate. These files do not install automations automatically. Companion device notification delivery is not tested against a real phone.
 
-The UI includes English, French, Ukrainian, and Dutch translations. Icon metadata is loaded by supported HA versions and ignored by HA 2024.1.2.
+The UI includes English, French, Ukrainian, and Dutch translations. Icon metadata is loaded by the supported HA baseline.
 
-The [English and Dutch dashboards](dashboards) are optional examples adapted from Lucas Vollebergh/idomp. They show disabled freshness, failed polling and unknown alert states explicitly. Freshness text reads the backend Data stale attributes, including `freshness_enabled`; it does not create a frontend clock. Optional controls have their own view. These examples use modern sections/heading frontend cards; the integration's HA 2024.1.2 floor does not establish frontend support for those cards. Replace sample entity references with your existing entity IDs; user naming overrides and HA versions affect generated names. They require no custom cards. Copy the YAML into a manual dashboard. Their schema/text is checked, but no browser-rendering claim is made.
+The [English and Dutch dashboards](dashboards) are optional examples adapted from Lucas Vollebergh/idomp. They show disabled freshness, failed polling and unknown alert states explicitly. Freshness text reads the backend Data stale attributes, including `freshness_enabled`; it does not create a frontend clock. Optional controls have their own view. These examples use sections/heading frontend cards available in the supported HA baseline. Replace sample entity references with your existing entity IDs; user naming overrides and HA versions affect generated names. They require no custom cards. Copy the YAML into a manual dashboard. Their schema/text is checked, but no browser-rendering claim is made.
 
 ## Diagnostics and retained history
 
@@ -60,6 +60,6 @@ Recorder rows, long-term statistics and backups can retain physiological history
 
 ## Development and packaging
 
-Use Python 3.11.16 for HA 2024.1.2, Python 3.13.15 for HA 2024.12.5, or Python 3.14.5 for HA 2026.10.2. Install the corresponding hash-pinned requirements lock. Run `python -m pytest`, `ruff check custom_components tests scripts` and `ruff format --check custom_components tests scripts`. `python scripts/build_release.py` creates flat `dist/owlet.zip`, separate optional `dist/owlet-examples.zip`, and SHA256SUMS without publishing. It refuses unexpected component files and requires the complete reviewed runtime inventory. Use `--tag VERSION` to enforce manifest/tag equality and `--source-archive FILE.zip` to compare candidate runtime bytes with a Git source archive.
+Use Python 3.14.5 with HA 2026.10.2 and the hash-pinned `requirements-test.lock`. Run `python -m pytest`, `ruff check custom_components tests scripts` and `ruff format --check custom_components tests scripts`. `python scripts/build_release.py` creates flat `dist/owlet.zip`, separate optional `dist/owlet-examples.zip`, and SHA256SUMS without publishing. It refuses unexpected component files and requires the complete reviewed runtime inventory. Use `--tag VERSION` to enforce manifest/tag equality and `--source-archive FILE.zip` to compare candidate runtime bytes with a Git source archive.
 
 [Roadmap coverage](docs/roadmap-coverage.md), [implementation plan](docs/superintegration-plan.md), [adoption and exclusions](docs/fork-adoption.md), [decisions](docs/superintegration-decisions.tsv), and [validation evidence](docs/validation.md) are kept for parent review. No live Owlet account, installed HA instance, device or phone was changed during implementation.

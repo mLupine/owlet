@@ -5,7 +5,6 @@ from unittest.mock import patch
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from custom_components.owlet.config_flow import OptionsFlowHandler
 from custom_components.owlet.const import DOMAIN
 from custom_components.owlet.owletapi.api import OwletAPI
 
@@ -80,8 +79,8 @@ async def test_legacy_long_interval_survives_setup_and_options(hass, cloud):
     entry = create_entry(hass, options={"scan_interval": 7200, "custom": "kept"})
     primary = await setup_entry(hass, entry)
     assert primary.update_interval.total_seconds() == 7200
-    flow = OptionsFlowHandler(entry)
-    validated = flow._schema()(
+    flow = await hass.config_entries.options.async_init(entry.entry_id)
+    validated = flow["data_schema"](
         {
             "scan_interval": 7200,
             "stale_threshold": 0,

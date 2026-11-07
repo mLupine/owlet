@@ -1,35 +1,35 @@
 # Validation evidence
 
-Release candidate: `2026.11.0b2`, verified 2026-11-07. The independent coder and cross-family reviews both returned SHIP for `0150ea2`. The parent then broadened discovery isolation from 403 to device-level 400/404, parameterized the HTTP and actual HA setup/reload tests, and changed the version. No account/entity IDs or schema changed.
+Candidate `2026.11.0b3` requires **Home Assistant 2026.10.2 or newer**. The supported automated profile is HA 2026.10.2 / Python 3.14.5, pinned in `requirements-test.lock`. Both2024 profiles and their locks were removed at the user's request. Historical results and prior release evidence remain in `validation-history.md`.
 
-## Final checks
+## Verification
 
-All three full standard profiles pass **283 tests**: HA 2024.1.2 / Python 3.11.16, HA 2024.12.5 / Python 3.13.15, and HA 2026.10.2 / Python 3.14.5. The parent ran each from the final main checkout, using `python -m pytest` with checked-in socket restrictions and assertions. Ruff check/format and whitespace validation pass.
+All **283 tests pass** on the retained profile after removing the old migration API fallback, private options-entry constructor, legacy recorder fixture ordering and conditional blueprint/icon/concurrent-poll assertions. The long-interval options regression now enters through HA's real options-flow manager. Existing migration, registry/recorder continuity, reauth, token, polling, lifecycle and device tests remain in the suite.
 
-Reproduce with the corresponding hash-pinned `requirements-test-2024-1.lock`, `requirements-test-min.lock`, or `requirements-test.lock`, then run `python -m pytest`. The intermediate pytest plugin emits an existing fixture-loop-scope deprecation warning.
+Ruff check/format and whitespace checks pass. The integration still uses Python3.11+ syntax; the test project's Python minimum is3.14 because the selected HA baseline requires it. No unrelated syntax rewrite or runtime ownership refactor was introduced.
 
-Both independent reviewers independently ran 277 tests per profile before the six added discovery-status cases. The cross-family reviewer additionally ran nine scratch probes per profile for retry recovery, explicit 429, authentication propagation and discovery cleanup. The parent reproduced five discovery failures and eleven activation/cleanup failures against their respective prior sources before fixing them. Tests exercise HA entries, services, registries and recorder rows; HTTP tests include local loopback traffic as well as mocked cloud sessions.
-
-## Packages
-
-Two builds produced identical bytes. The builder enforces the exact runtime/example inventories, license and brand assets, tag/manifest agreement and source archive equality. Member hashes are recorded in `package-source-sha256.tsv`.
-
-```
-8b14f1b44564c3cd3ba60436487b22fc9c24e3b8556175e7e3e6fdf57f1595f5  owlet.zip
-09b632e43bd9e349cf55e222f5563286dbce96953717f6520fe38135804537fd  owlet-examples.zip
-```
-
-Verify the committed source with:
+Reproduce:
 
 ```sh
-git archive --format=zip --output=/tmp/owlet-source.zip HEAD
-python scripts/build_release.py --tag 2026.11.0b2 --source-archive /tmp/owlet-source.zip
+uv venv --python 3.14.5
+uv pip sync --require-hashes requirements-test.lock
+.venv/bin/python -m pytest
+.venv/bin/ruff check custom_components tests scripts
+.venv/bin/ruff format --check custom_components tests scripts
+python scripts/build_release.py --tag 2026.11.0b3
 ```
 
-## Support and evidence limits
+The deterministic component and examples archives have these SHA256 hashes:
 
-HA 2024.1.2 remains the tested compatibility floor, not a security recommendation. `dependency-advisories.tsv` records unsuppressed audit findings in the complete HA/test environments. Owlet adds no pip runtime dependencies and cannot upgrade HA-owned packages. The exploratory HA 2026.11 environment had no audit findings, but its published test plugin could not collect because of incompatible HA imports and an exact-version mismatch. No successful 2026.11 suite is claimed; details remain in `validation-history.md`.
+```
+517fec2486a1bb849bfe835262c746c6d22f95e6aa54507f7ee969445707ae2e  owlet.zip
+ab5c79a26b63d8922ed912060484ab2295a24f00676b6742abb1ae7263edcfde  owlet-examples.zip
+```
 
-The earlier dbe6f6c installation was verified live on HA 2026.11.0, retaining 62 existing live entity IDs, adding 12 diagnostics and keeping five-second polling. That is evidence for the previous version, not this candidate. Long-term cloud/token behavior, physical actuation, all regional/device variants, rollback of this candidate, rendered dashboards and phone delivery remain unverified. Dashboard tests render HA templates, not the frontend.
+The package builder validates runtime/example inventories and manifest/tag agreement. `package-source-sha256.tsv` records source member hashes. Final independent review and hosted CI results are reported separately.
 
-Existing user titles and identifiers can still appear in HA-owned logs. Integration error handlers log useful categories/type names without raw exception payloads. Ukrainian translation remains excluded. See `roadmap-coverage.md` for all 24 issue dispositions and `roadmap-decisions.tsv` for the implementation decisions. Hosted CI and publication status are reported separately, rather than inferred from local tests.
+## Compatibility and limits
+
+The v1-to-v2 account migration remains: old Owlet installations can upgrade on supported HA without recreating entries or changing entity IDs. This is distinct from compatibility with old HA APIs. Existing custom options and recorder history remain preserved. HACS and both notification blueprints declare2026.10.2 as their minimum.
+
+The earlier live installation evidence concerns dbe6f6c on HA2026.11.0, not this candidate. Long-term cloud/device behavior, physical actuation, all regional variants and rendered dashboards remain unverified. The published HA2026.11 test plugin is incompatible, so no green2026.11 suite is claimed. `dependency-advisories.tsv` is the historical audit of complete HA/test environments, including retired profiles; dropping old profiles does not remediate advisories in users' HA hosts. This integration adds no pip runtime dependencies.

@@ -38,3 +38,7 @@ Previously closed findings remain closed in implementation: explicit V2 change-o
 - The 30-second command window and two-second readback interval are local constants, not a vendor latency claim. Confirmation means matching subsequent cloud readback, not verified physical actuation or a newly generated device snapshot.
 - APP_ACTIVE policy and historical-position protocol/labels remain unverified against a live account. No cadence guarantee or tummy code was invented. Matching source tests establish the implemented contract only.
 - Existing serial registry identity, credentials, unknown options, recorder metadata, and switch remain the upgrade contract. No ownership, funding, namespace, or registry cleanup was added.
+
+## Superseding support decision
+
+At the user's request, HA 2026.10.2 is now the minimum. The earlier2024 support decisions above are historical. The version-keyword migration fallback, private options-entry reference, old fixture ordering and conditional blueprint/icon API tests were removed. Account schema migrations and identity preservation remain supported.

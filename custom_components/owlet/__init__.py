@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-from inspect import signature
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_API_TOKEN, CONF_REGION, CONF_USERNAME, Platform
@@ -49,13 +48,7 @@ async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) ->
     unique_id = account_unique_id(region, username)
     if find_account_entry(hass, region, username, config_entry.entry_id) is not None:
         return False
-    if "version" in signature(hass.config_entries.async_update_entry).parameters:
-        hass.config_entries.async_update_entry(
-            config_entry, unique_id=unique_id, version=2
-        )
-    else:
-        config_entry.version = 2
-        hass.config_entries.async_update_entry(config_entry, unique_id=unique_id)
+    hass.config_entries.async_update_entry(config_entry, unique_id=unique_id, version=2)
     return True
 
 

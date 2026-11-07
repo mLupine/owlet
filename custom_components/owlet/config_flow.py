@@ -6,7 +6,7 @@ from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigFlowResult
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_REGION,
@@ -14,7 +14,6 @@ from homeassistant.const import (
     CONF_USERNAME,
 )
 from homeassistant.core import callback
-from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -102,7 +101,7 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         errors = {}
         if user_input is not None:
             username = user_input[CONF_USERNAME].strip()
@@ -127,9 +126,11 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry):
-        return OptionsFlowHandler(config_entry)
+        return OptionsFlowHandler()
 
-    async def async_step_reauth(self, user_input: Mapping[str, Any]) -> FlowResult:
+    async def async_step_reauth(
+        self, user_input: Mapping[str, Any]
+    ) -> ConfigFlowResult:
         self._reauth_entry = self.hass.config_entries.async_get_entry(
             self.context["entry_id"]
         )
@@ -137,7 +138,7 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reauth_confirm(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         entry = self._reauth_entry
         errors = {}
         if user_input is not None:
@@ -163,7 +164,7 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def async_step_reconfigure(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         errors = {}
         if user_input is not None:
@@ -204,13 +205,10 @@ class OwletConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class OptionsFlowHandler(config_entries.OptionsFlow):
-    """Use a private entry reference across old and current HA options APIs."""
-
-    def __init__(self, entry: ConfigEntry) -> None:
-        self._entry = entry
+    """Edit options using the entry supplied by Home Assistant."""
 
     def _schema(self) -> vol.Schema:
-        options = self._entry.options
+        options = self.config_entry.options
         return vol.Schema(
             {
                 vol.Required(
@@ -243,7 +241,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         errors = {}
         if user_input is not None:
             try:
@@ -256,7 +254,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     errors[CONF_STALE_THRESHOLD] = "stale_threshold_too_short"
                 else:
                     return self.async_create_entry(
-                        title="", data={**self._entry.options, **validated}
+                        title="", data={**self.config_entry.options, **validated}
                     )
         return self.async_show_form(
             step_id="init", data_schema=self._schema(), errors=errors
