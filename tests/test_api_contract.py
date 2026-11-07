@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from aiohttp import web
 from homeassistant.util import dt as dt_util
+from pytest_homeassistant_custom_component.common import async_fire_time_changed
 
 from custom_components.owlet.owletapi.api import OwletAPI, parse_retry_after
 from custom_components.owlet.owletapi.const import REGION_INFO
@@ -261,21 +262,27 @@ async def test_malformed_fields_do_not_hide_valid_neighbors(session):
 
 @pytest.mark.parametrize("region", ["europe", "world"])
 async def test_actual_aiohttp_to_ha_platforms_and_command_readback(
-    hass, aiohttp_server, socket_enabled, region
+    hass, aiohttp_server, socket_enabled, region, freezer
 ):
-    state = {"base": 1, "activation": 0}
+    state = {"base": 1, "activation": 0, "requested": None, "reads": 0}
 
     async def handler(request):
         if request.path == "/devices.json":
             return web.json_response([{"device": {"dsn": "unit-one"}}])
         if request.path.endswith("/properties.json"):
+            if state["requested"] is not None:
+                state["reads"] += 1
+                if state["reads"] == 3:
+                    state["base"] = state["requested"]
             raw = raw_v3(bso=state["base"])
             return web.json_response(
                 [{"property": {"name": key, **value}} for key, value in raw.items()]
             )
         data = await request.json()
         if "BASE_STATION_ON_CMD" in request.path:
-            state["base"] = int(json.loads(data["datapoint"]["value"])["val"] == "true")
+            state["requested"] = int(
+                json.loads(data["datapoint"]["value"])["val"] == "true"
+            )
         else:
             state["activation"] += 1
         return web.json_response({"datapoint": {"value": "accepted"}}, status=201)
@@ -289,11 +296,28 @@ async def test_actual_aiohttp_to_ha_platforms_and_command_readback(
         entry = create_entry(
             hass, region=region, unique_id=f"{region}_parent@example.invalid"
         )
-        coordinator = await setup_entry(hass, entry)
+        await setup_entry(hass, entry)
         assert entity_state(hass, "sensor", "heart_rate").state == "121.0"
-        await coordinator.sock.control_base_station(False)
-        await coordinator.async_refresh()
+        switch = entity_state(hass, "switch", "base_station_on")
+        await hass.services.async_call(
+            "switch", "turn_off", {"entity_id": switch.entity_id}, blocking=True
+        )
+        await hass.async_block_till_done()
+        assert entity_state(hass, "switch", "base_station_on").state == "on"
+        assert (
+            entity_state(hass, "switch", "base_station_on").attributes["command_status"]
+            == "pending"
+        )
+        for _ in range(2):
+            freezer.tick(2)
+            async_fire_time_changed(hass, dt_util.utcnow())
+            await hass.async_block_till_done()
+        assert state["reads"] == 3
         assert entity_state(hass, "switch", "base_station_on").state == "off"
+        assert (
+            entity_state(hass, "switch", "base_station_on").attributes["command_status"]
+            == "confirmed"
+        )
         assert state["activation"] >= 1
         assert await hass.config_entries.async_unload(entry.entry_id)
 
@@ -357,7 +381,9 @@ async def test_discovered_generation_survives_empty_first_poll(
     device = discovery["response"][0]
     assert device["verified_version"] == version
     sock = Sock(api, device["device"], device["verified_version"])
-    coordinator = OwletCoordinator(hass, sock, create_entry(hass))
+    coordinator = OwletCoordinator(
+        hass, sock, create_entry(hass, options={"stale_threshold": 5})
+    )
     try:
         with patch.object(api, "get_properties", return_value={"response": {}}):
             await coordinator.async_refresh()

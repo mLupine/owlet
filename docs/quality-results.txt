@@ -1,0 +1,18 @@
+33 Python files parse with Python 3.11 grammar
+No component Python comments
+Four locale key sets and icon keys match; no empty strings
+.venv/bin/ruff check custom_components tests scripts
+All checks passed!
+.venv/bin/ruff format --check custom_components tests scripts
+33 files already formatted
+uv pip check --python .venv-2024-1/bin/python
+Using Python 3.11.16 environment at: .venv-2024-1
+Checked 101 packages in 0.91ms
+All installed packages are compatible
+uv pip check --python .venv-min/bin/python
+Using Python 3.13.15 environment at: .venv-min
+Checked 129 packages in 1ms
+All installed packages are compatible
+uv pip check --python .venv/bin/python
+Checked 154 packages in 1ms
+All installed packages are compatible

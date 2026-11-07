@@ -1,0 +1,219 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Account is al geconfigureerd",
+      "reauth_successful": "Herauthenticatie geslaagd",
+      "reconfigure_successful": "Herconfiguratie geslaagd"
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken",
+      "invalid_credentials": "De ingegeven gegevens zijn niet correct",
+      "invalid_email": "Het ingegeven e-mailadres is niet correct",
+      "invalid_password": "Het ingegeven wachtwoord is niet correct",
+      "unknown": "Onverwachte fout",
+      "no_devices": "Geen ondersteunde Owlet-sok gevonden op dit account",
+      "rate_limited": "Owlet beperkt het aantal aanvragen. Probeer het later opnieuw."
+    },
+    "step": {
+      "reauth_confirm": {
+        "data": {
+          "password": "Wachtwoord"
+        },
+        "title": "Opnieuw aanmelden bij Owlet"
+      },
+      "user": {
+        "data": {
+          "password": "Wachtwoord",
+          "region": "Regio",
+          "username": "E-mail"
+        }
+      },
+      "reconfigure": {
+        "title": "Owlet opnieuw configureren",
+        "data": {
+          "region": "Regio",
+          "password": "Wachtwoord"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "awake": {
+        "name": "Wakker"
+      },
+      "charging": {
+        "name": "Opladen"
+      },
+      "crit_batt_alrt": {
+        "name": "Alarm kritieke batterij"
+      },
+      "crit_ox_alrt": {
+        "name": "Alarm kritiek zuurstofgehalte"
+      },
+      "high_hr_alrt": {
+        "name": "Alarm hoge hartslag"
+      },
+      "high_ox_alrt": {
+        "name": "Alarm hoog zuurstofgehalte"
+      },
+      "lost_pwr_alrt": {
+        "name": "Alarm stroomuitval"
+      },
+      "low_batt_alrt": {
+        "name": "Alarm lage batterij"
+      },
+      "low_hr_alrt": {
+        "name": "Alarm lage hartslag"
+      },
+      "low_ox_alrt": {
+        "name": "Alarm laag zuurstofgehalte"
+      },
+      "sock_discon_alrt": {
+        "name": "Alarm sok niet verbonden"
+      },
+      "sock_off": {
+        "name": "Sok uit"
+      },
+      "data_stale": {
+        "name": "Verouderde gegevens"
+      },
+      "base_station_on": {
+        "name": "Basisstation aan"
+      },
+      "discomfort_alrt": {
+        "name": "Alarm ongemak"
+      },
+      "low_integ_read": {
+        "name": "Lage signaalkwaliteit"
+      },
+      "preview_high_alarm": {
+        "name": "Voorbeeldalarm hoge prioriteit"
+      },
+      "preview_med_alarm": {
+        "name": "Voorbeeldalarm gemiddelde prioriteit"
+      },
+      "preview_low_alarm": {
+        "name": "Voorbeeldalarm lage prioriteit"
+      },
+      "preview_drm_alarm": {
+        "name": "Voorbeeldalarm DRM-prioriteit"
+      },
+      "discomfort_alert": {
+        "name": "Alarm ongemak"
+      },
+      "low_integrity_reading": {
+        "name": "Lage signaalkwaliteit"
+      },
+      "preview_high_priority_alarm": {
+        "name": "Voorbeeldalarm hoge prioriteit"
+      },
+      "preview_medium_priority_alarm": {
+        "name": "Voorbeeldalarm gemiddelde prioriteit"
+      },
+      "preview_low_priority_alarm": {
+        "name": "Voorbeeldalarm lage prioriteit"
+      },
+      "preview_drm_priority_alarm": {
+        "name": "Voorbeeldalarm DRM-prioriteit"
+      }
+    },
+    "sensor": {
+      "batterymin": {
+        "name": "Resterende batterijduur"
+      },
+      "batterypercent": {
+        "name": "Batterijniveau"
+      },
+      "heartrate": {
+        "name": "Hartslag"
+      },
+      "movement": {
+        "name": "Beweging"
+      },
+      "movementbucket": {
+        "name": "Bewegingscategorie"
+      },
+      "o2saturation": {
+        "name": "O2-saturatie"
+      },
+      "o2saturation10a": {
+        "name": "O2-saturatie gemiddelde 10 minuten"
+      },
+      "signalstrength": {
+        "name": "Signaalsterkte"
+      },
+      "skintemp": {
+        "name": "Huidtemperatuur"
+      },
+      "sleepstate": {
+        "name": "Slaaptoestand",
+        "state": {
+          "awake": "Wakker",
+          "deep_sleep": "Diepe slaap",
+          "light_sleep": "Lichte slaap",
+          "unknown": "Onbekend"
+        }
+      },
+      "last_updated": {
+        "name": "Laatste meting"
+      },
+      "last_red_alert": {
+        "name": "Laatste rode alarm"
+      },
+      "alerts_mask": {
+        "name": "Alarmmasker"
+      },
+      "base_mon_status": {
+        "name": "Bewakingsstatus basisstation"
+      },
+      "battery_status": {
+        "name": "Batterijstatus"
+      },
+      "bodyposition": {
+        "name": "Lichaamshouding (experimenteel)",
+        "state": {
+          "no_data": "Geen gegevens",
+          "moving": "In beweging",
+          "undetected": "Niet gedetecteerd",
+          "on_back": "Op de rug",
+          "on_side": "Op de zij"
+        }
+      },
+      "base_monitoring_status": {
+        "name": "Bewakingsstatus basisstation"
+      },
+      "red_alert_updated_at": {
+        "name": "Rode alarm bijgewerkt op"
+      }
+    },
+    "switch": {
+      "base_on": {
+        "name": "Basisstation aan"
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "scan_interval": "Polling-interval (seconden)",
+          "stale_threshold": "Geldigheidsduur metingen in minuten (standaard 0/uit, maximaal 120)",
+          "activation_interval": "APP_ACTIVE-interval in seconden (10–600)",
+          "body_position": "Experimentele historische lichaamshouding inschakelen"
+        },
+        "title": "Opties voor Owlet"
+      }
+    },
+    "error": {
+      "invalid_options": "Voer waarden binnen de weergegeven limieten in.",
+      "stale_threshold_too_short": "De ingeschakelde geldigheidsduur moet strikt langer zijn dan het polling-interval."
+    }
+  },
+  "issues": {
+    "stale_data": {
+      "title": "Owlet-metingen zijn verouderd of missen brontijden",
+      "description": "Een of meer verwachte metingen hebben geen recente brontijd. Controleer de Owlet-app en de apparaatverbinding. Home Assistant kan uit dit antwoord geen actuele metingen vaststellen."
+    }
+  }
+}

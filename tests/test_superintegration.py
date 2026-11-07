@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import issue_registry as ir
@@ -308,7 +308,7 @@ async def test_nearest_per_property_expiry_and_partial_stale_repair(
         "data_updated_at": (now - timedelta(days=1)).isoformat(),
     }
     cloud[2].return_value = {"response": raw}
-    entry = create_entry(hass, options={"scan_interval": 3600})
+    entry = create_entry(hass, options={"scan_interval": 180, "stale_threshold": 5})
     coordinator = await setup_entry(hass, entry)
     assert entity_state(hass, "sensor", "heart_rate").state == "122"
     freezer.tick(11)
@@ -337,7 +337,7 @@ async def test_unknown_timestamp_is_not_current_and_charging_suppresses_warning(
     raw = raw_v3()
     raw["REAL_TIME_VITALS"]["data_updated_at"] = "broken"
     cloud[2].return_value = {"response": raw}
-    entry = create_entry(hass)
+    entry = create_entry(hass, options={"stale_threshold": 5})
     coordinator = await setup_entry(hass, entry)
     assert coordinator.reading_status("heart_rate") == "unknown"
     assert entity_state(hass, "sensor", "heart_rate").state == "unavailable"
@@ -350,7 +350,7 @@ async def test_unknown_timestamp_is_not_current_and_charging_suppresses_warning(
     assert entity_state(hass, "sensor", "heart_rate").state == "unavailable"
 
 
-async def test_switch_readback_success_and_mismatch(hass, cloud):
+async def test_switch_readback_success_and_mismatch(hass, cloud, freezer):
     entry = create_entry(hass)
     await setup_entry(hass, entry)
     switch_id = er.async_get(hass).async_get_entity_id(
@@ -363,14 +363,23 @@ async def test_switch_readback_success_and_mismatch(hass, cloud):
         await hass.services.async_call(
             "switch", "turn_off", {"entity_id": switch_id}, blocking=True
         )
+        await hass.async_block_till_done()
         assert hass.states.get(switch_id).state == "off"
+        assert hass.states.get(switch_id).attributes["command_status"] == "confirmed"
         args = command.call_args.args
         assert args[1] == "BASE_STATION_ON_CMD"
         assert json.loads(args[2]["datapoint"]["value"])["val"] == "false"
-        with pytest.raises(HomeAssistantError, match="did not confirm"):
-            await hass.services.async_call(
-                "switch", "turn_on", {"entity_id": switch_id}, blocking=True
-            )
+        await hass.services.async_call(
+            "switch", "turn_on", {"entity_id": switch_id}, blocking=True
+        )
+        await hass.async_block_till_done()
+        assert hass.states.get(switch_id).state == "off"
+        assert hass.states.get(switch_id).attributes["command_status"] == "pending"
+        freezer.tick(31)
+        async_fire_time_changed(hass, dt_util.utcnow())
+        await hass.async_block_till_done()
+        assert hass.states.get(switch_id).state == "off"
+        assert hass.states.get(switch_id).attributes["command_status"] == "unconfirmed"
 
 
 async def test_diagnostics_excludes_all_identifiers_and_unknown_payloads(hass, cloud):
@@ -521,7 +530,7 @@ async def test_independently_updated_v3_status_uses_its_own_timestamp(hass, clou
         "data_updated_at": (dt_util.utcnow() - timedelta(days=1)).isoformat(),
     }
     cloud[2].return_value = {"response": raw}
-    entry = create_entry(hass)
+    entry = create_entry(hass, options={"stale_threshold": 5})
     await setup_entry(hass, entry)
     assert entity_state(hass, "sensor", "heart_rate").state == "121.0"
     assert entity_state(hass, "sensor", "battery_status").state == "unavailable"
@@ -570,12 +579,15 @@ async def test_change_only_v2_states_survive_old_change_times(hass, cloud):
         raw[name]["value"] = value
         raw[name]["data_updated_at"] = (now - timedelta(days=1)).isoformat()
     cloud[2].return_value = {"response": raw}
-    coordinator = await setup_entry(hass, create_entry(hass))
+    coordinator = await setup_entry(
+        hass, create_entry(hass, options={"stale_threshold": 5})
+    )
     assert entity_state(hass, "sensor", "battery_percentage").state == "85"
     assert entity_state(hass, "binary_sensor", "charging").state == "off"
     assert entity_state(hass, "switch", "base_station_on").state == "on"
     assert not coordinator.is_stale
     raw["CHARGE_STATUS"]["value"] = 1
+    raw["SOCK_CONNECTION"]["data_updated_at"] = now.isoformat()
     for name in ("HEART_RATE", "OXYGEN_LEVEL"):
         raw[name]["data_updated_at"] = (now - timedelta(hours=2)).isoformat()
     await coordinator.async_refresh()
@@ -593,7 +605,9 @@ async def test_never_observed_vitals_are_unhealthy_until_recovered(
     raw = raw_v3()
     raw["REAL_TIME_VITALS"]["value"] = payload
     cloud[2].return_value = {"response": raw}
-    coordinator = await setup_entry(hass, create_entry(hass))
+    coordinator = await setup_entry(
+        hass, create_entry(hass, options={"stale_threshold": 5})
+    )
     assert coordinator.affected_vitals == ["heart_rate", "oxygen_saturation"]
     assert coordinator.is_stale
     freezer.tick(3601)
@@ -621,7 +635,9 @@ async def test_invalid_present_vitals_warn_despite_advancing_timestamps(
         return raw
 
     cloud[2].return_value = {"response": invalid_snapshot()}
-    coordinator = await setup_entry(hass, create_entry(hass))
+    coordinator = await setup_entry(
+        hass, create_entry(hass, options={"stale_threshold": 5})
+    )
     assert coordinator.is_stale
     assert coordinator.affected_vitals == ["heart_rate", "oxygen_saturation"]
     for _ in range(4):

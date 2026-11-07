@@ -246,9 +246,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             except vol.Invalid:
                 errors["base"] = "invalid_options"
             else:
-                return self.async_create_entry(
-                    title="", data={**self._entry.options, **validated}
-                )
+                threshold = validated[CONF_STALE_THRESHOLD] * 60
+                if threshold and threshold <= validated[CONF_SCAN_INTERVAL]:
+                    errors[CONF_STALE_THRESHOLD] = "stale_threshold_too_short"
+                else:
+                    return self.async_create_entry(
+                        title="", data={**self._entry.options, **validated}
+                    )
         return self.async_show_form(
             step_id="init", data_schema=self._schema(), errors=errors
         )

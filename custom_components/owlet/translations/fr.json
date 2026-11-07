@@ -43,14 +43,15 @@
         "title": "Configurer les options pour Owlet",
         "data": {
           "scan_interval": "Polling interval in seconds (5–3600)",
-          "stale_threshold": "Measurement freshness limit in minutes (0 disables)",
+          "stale_threshold": "Limite de fraîcheur des mesures en minutes (0/désactivé par défaut, maximum 120)",
           "activation_interval": "APP_ACTIVE cadence in seconds (10–600)",
           "body_position": "Enable experimental historical body position"
         }
       }
     },
     "error": {
-      "invalid_options": "Enter values within the displayed limits."
+      "invalid_options": "Enter values within the displayed limits.",
+      "stale_threshold_too_short": "La limite de fraîcheur activée doit être strictement supérieure à l'intervalle de mise à jour."
     }
   },
   "entity": {

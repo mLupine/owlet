@@ -31,3 +31,9 @@ custom_components/owlet/brand/SOURCE.txt. No trademark license is asserted.
 
 The body-position implementation also credits kirill kulakov (kirill578),
 as recorded in the WilliamsJChris source commit coauthor trailer.
+
+Dutch UI translations and icon metadata adapt LucasVollebergh/owlet
+commit a0d9cc57f26d56ca740ffff59ec3982215ac9df5, also inherited by idomp.
+Original author and committer: Claude <noreply@anthropic.com>; source
+coauthor: Claude Opus 5.5 <noreply@anthropic.com>. Lucas Vollebergh
+remains credited as the source project contributor and license holder.

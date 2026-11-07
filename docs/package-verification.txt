@@ -1,0 +1,6 @@
+Two sequential final builds are byte-identical for both archives.
+Both ZIP integrity checks passed.
+Every archive member matches its source bytes.
+Component archive equals the complete allowed source file set.
+d083e1ba74734a2dacd6903a3cf71c700e35236bc1e59bb66a63b3c207916a04  owlet.zip
+a46c97d77e30b378805ade39b1b8a5c8d65918823c2b8296e078de73bd27f5d5  owlet-examples.zip

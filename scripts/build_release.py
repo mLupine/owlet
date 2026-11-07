@@ -38,6 +38,8 @@ def build_release() -> None:
             "LICENSE",
             "NOTICE",
             "owletapi/LICENSE",
+            "icons.json",
+            "translations/nl.json",
             "translations/en.json",
             "translations/fr.json",
             "translations/uk.json",

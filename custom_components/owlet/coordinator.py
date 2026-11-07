@@ -32,6 +32,20 @@ from .owletapi.sock import Sock
 
 _LOGGER = logging.getLogger(__name__)
 EVENT_KEYS = frozenset(PROPERTIES[bool])
+SOURCE_HEALTH_KEYS = frozenset(
+    (
+        "heart_rate",
+        "oxygen_saturation",
+        "battery_percentage",
+        "signal_strength",
+        "movement",
+        "charging",
+        "base_station_on",
+        "sock_connection",
+        "skin_temperature",
+        "sleep_state",
+    )
+)
 
 
 def store_tokens(hass: HomeAssistant, entry: ConfigEntry, tokens: dict) -> None:
@@ -54,6 +68,7 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         self.entry = entry
         self._cancel_expiry = None
         self._failure_count = 0
+        self.successful_polls = 0
         self._options = None
         self._unknown_since: dict[str, datetime] = {}
         self.body_position = None
@@ -126,7 +141,25 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         )
 
     @property
+    def freshness_options_compatible(self) -> bool:
+        return not self.stale_seconds or self.stale_seconds > self.base_interval
+
+    @property
+    def idle_source_deadline(self) -> datetime | None:
+        timestamps = [
+            timestamp
+            for key in SOURCE_HEALTH_KEYS
+            if (timestamp := self.sock.property_timestamp(key)) is not None
+        ]
+        if not self.stale_seconds or not timestamps:
+            return None
+        return max(timestamps) + timedelta(seconds=self.stale_seconds)
+
+    @property
     def readings_expected(self) -> bool:
+        deadline = self.idle_source_deadline
+        if self.stale_seconds and (deadline is None or deadline <= dt_util.utcnow()):
+            return True
         for key, idle_value in (("charging", True), ("base_station_on", False)):
             if self.sock.properties.get(key) is idle_value and self.reading_status(
                 key
@@ -200,6 +233,8 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         deadlines.extend(
             since + timedelta(hours=1) for since in self._unknown_since.values()
         )
+        if self.idle_source_deadline:
+            deadlines.append(self.idle_source_deadline)
         future = [deadline for deadline in deadlines if deadline > now]
         if future:
             self._cancel_expiry = async_track_point_in_utc_time(
@@ -232,6 +267,7 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
         finally:
             store_tokens(self.hass, self.entry, self.sock.api.tokens)
         self._failure_count = 0
+        self.successful_polls += 1
         enabled = (
             self.entry.options.get(CONF_BODY_POSITION) is True
             and self.sock.version == 3

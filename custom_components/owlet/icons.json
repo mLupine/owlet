@@ -1,0 +1,40 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "awake": {
+        "default": "mdi:sleep-off",
+        "state": {
+          "off": "mdi:sleep"
+        }
+      }
+    },
+    "sensor": {
+      "o2saturation": {
+        "default": "mdi:leaf"
+      },
+      "o2saturation10a": {
+        "default": "mdi:leaf"
+      },
+      "heartrate": {
+        "default": "mdi:heart-pulse"
+      },
+      "movement": {
+        "default": "mdi:cursor-move"
+      },
+      "movementbucket": {
+        "default": "mdi:bucket-outline"
+      },
+      "sleepstate": {
+        "default": "mdi:sleep"
+      },
+      "last_updated": {
+        "default": "mdi:clock-check-outline"
+      }
+    },
+    "switch": {
+      "base_on": {
+        "default": "mdi:router-wireless"
+      }
+    }
+  }
+}

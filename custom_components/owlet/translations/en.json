@@ -198,7 +198,7 @@
       "init": {
         "data": {
           "scan_interval": "Polling interval in seconds (5–3600)",
-          "stale_threshold": "Measurement freshness limit in minutes (0 disables)",
+          "stale_threshold": "Measurement freshness limit in minutes (default 0/off, maximum 120)",
           "activation_interval": "APP_ACTIVE cadence in seconds (10–600)",
           "body_position": "Enable experimental historical body position"
         },
@@ -206,7 +206,8 @@
       }
     },
     "error": {
-      "invalid_options": "Enter values within the displayed limits."
+      "invalid_options": "Enter values within the displayed limits.",
+      "stale_threshold_too_short": "When enabled, the freshness limit must be strictly longer than the polling interval."
     }
   },
   "issues": {

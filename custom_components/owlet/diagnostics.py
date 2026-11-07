@@ -12,6 +12,7 @@ async def async_get_config_entry_diagnostics(hass, entry) -> dict:
                 "poll_success": coordinator.last_update_success,
                 "poll_seconds": coordinator.base_interval,
                 "stale_threshold_seconds": coordinator.stale_seconds,
+                "freshness_options_compatible": coordinator.freshness_options_compatible,
                 "readings_expected": coordinator.readings_expected,
                 "capabilities": sorted(coordinator.sock.capabilities),
                 "freshness": {

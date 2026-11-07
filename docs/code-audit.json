@@ -1,0 +1,124 @@
+{
+  "path": "custom_components/owlet",
+  "files_scanned": 15,
+  "counts": {
+    "low": 7,
+    "medium": 2
+  },
+  "class_counts": {
+    "cosmetic": 7,
+    "bug": 2
+  },
+  "slop_score": 11,
+  "verdict": "Some AI tells present",
+  "findings": [
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/coordinator.py",
+      "line": 11,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "from homeassistant.helpers.event import async_track_point_in_utc_time"
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/coordinator.py",
+      "line": 240,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "self._cancel_expiry = async_track_point_in_utc_time("
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/switch.py",
+      "line": 12,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "from homeassistant.helpers.event import async_track_point_in_utc_time"
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/switch.py",
+      "line": 138,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "self._cancel_readback = async_track_point_in_utc_time("
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/switch.py",
+      "line": 165,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "self._cancel_deadline = async_track_point_in_utc_time("
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/sleep_data.py",
+      "line": 18,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "from homeassistant.helpers.event import async_track_point_in_utc_time"
+    },
+    {
+      "rule": "verbose-naming",
+      "label": "Over-verbose, robotically self-documenting identifier",
+      "sev": "low",
+      "class": "cosmetic",
+      "share": "verified 0.4% (inflated; people mostly argue FOR descriptive names)",
+      "fix": "A name that is a whole sentence (getUserDataFromApiResponseHandler) reads as machine-generated. Trim it.",
+      "file": "custom_components/owlet/sleep_data.py",
+      "line": 232,
+      "match": "async_track_point_in_utc_time",
+      "snippet": "self._cancel_expiry = async_track_point_in_utc_time("
+    },
+    {
+      "rule": "swallowed-errors",
+      "label": "Catch-all / swallowed errors (bare except, empty catch, empty Go err block)",
+      "sev": "medium",
+      "class": "bug",
+      "share": "verified 3.1% (try/except wrapped around everything)",
+      "fix": "Catch specific exceptions and handle them. A bare except, an empty catch, or an empty `if err != nil {}` eats the one clue you needed.",
+      "file": "custom_components/owlet/config_flow.py",
+      "line": 80,
+      "match": "except Exception:",
+      "snippet": "except Exception:"
+    },
+    {
+      "rule": "swallowed-errors",
+      "label": "Catch-all / swallowed errors (bare except, empty catch, empty Go err block)",
+      "sev": "medium",
+      "class": "bug",
+      "share": "verified 3.1% (try/except wrapped around everything)",
+      "fix": "Catch specific exceptions and handle them. A bare except, an empty catch, or an empty `if err != nil {}` eats the one clue you needed.",
+      "file": "custom_components/owlet/owletapi/api.py",
+      "line": 657,
+      "match": "except Exception:",
+      "snippet": "except Exception:"
+    }
+  ]
+}

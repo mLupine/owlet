@@ -18,21 +18,21 @@ Open **Settings → Devices & services → Integrations → Owlet → Configure*
 
 Additional options:
 
-- Measurement freshness limit: **5 minutes** by default, **0** disables freshness checks, maximum 120 minutes.
+- Measurement freshness limit: **0/off by default** for new and existing entries, maximum 120 minutes. Enable it explicitly. When enabled, its duration must be strictly longer than the polling interval. Existing explicit settings remain effective. V2 properties can remain unchanged for hours even in a healthy capture; enabled gating keeps each original source time and can hide those readings.
 - APP_ACTIVE cadence: **30 seconds** by default, configurable from 10 to 600 seconds. An observed idle APP_ACTIVE value requests reactivation sooner. Writes run separately from read publication and are cancelled on unload. This cadence is an integration policy, not a verified cloud guarantee.
 - Historical body position: **off by default**. Uses a separate 60-second coordinator with a five-minute sample limit. Enabling it never adds HTTP latency to primary telemetry.
 
-The entry menu's **Reconfigure** action can authenticate the same username in a different region while retaining the entry. It refuses an already configured account/region. Reauthentication errors distinguish invalid credentials, connectivity, rate limits and unexpected failures.
+On **HA 2024.4 or newer**, the entry menu's **Reconfigure** action can authenticate the same username in a different region while retaining the entry. It refuses an already configured account/region. Reauthentication errors distinguish invalid credentials, connectivity, rate limits and unexpected failures.
 
 ## Readings and diagnostics
 
-Measurements use the timestamp of their actual raw property. V3 measurements share REAL_TIME_VITALS; v2 properties each keep their own times. Independently updated statuses use their own timestamps. Missing/invalid times mean unknown freshness; polling time is never substituted. Expiry occurs at the nearest entity deadline even with slow polling. Charging-sensitive readings remain unavailable while charging or when charging state is unknown.
+Measurements use the timestamp of their actual raw property. V3 measurements share REAL_TIME_VITALS; v2 properties each keep their own times. Independently updated statuses use their own timestamps. Missing/invalid times mean unknown freshness; polling time is never substituted. When freshness is enabled, expiry occurs at the nearest entity deadline. Stored incompatible interval/threshold combinations are honored without adjustment and reported as `freshness_options_compatible: false` in diagnostics. Edit the options to resolve the mismatch. Charging-sensitive readings remain unavailable while charging or when charging state is unknown.
 
-Standalone alert/status flags in the event mapping retain their last reported event value while authenticated polling succeeds; an unchanged event timestamp alone does not expire them. Their raw mappings and the precise freshness policy are documented in [docs/freshness.md](docs/freshness.md). HTTP success does not establish live device connectivity. Last reading and Data stale diagnostics expose measurement freshness; a repair warning uses the actual affected vital, even if battery continues updating. Download diagnostics uses an allowlist and omits accounts, credentials, serials, MACs, baby data and raw cloud payloads. HA itself may still log an existing entry title containing an email.
+Standalone alert/status flags in the event mapping retain their last reported event value while authenticated polling succeeds; an unchanged event timestamp alone does not expire them. Their raw mappings and the precise freshness policy are documented in [docs/freshness.md](docs/freshness.md). HTTP success does not establish live device connectivity. Last reading exposes source time. With freshness enabled, Data stale and repair warnings use the actual affected vital, even if battery continues updating. Charging/base-off suppresses warnings only while a device-output source timestamp remains within the freshness window. Successful HTTP polls never extend that window. Download diagnostics uses an allowlist and omits accounts, credentials, serials, MACs, baby data and raw cloud payloads. HA itself may still log an existing entry title containing an email.
 
 Malformed fields do not discard valid neighboring values. Nonfinite and boolean numeric readings become unknown. Oxygen and battery percentages use the protocol's 0–100 domain. Heart rate and temperature do not use invented physiological cutoffs. Unknown sleep codes remain unknown. New capabilities appearing after the initial snapshot add entities without a reload.
 
-The base-station switch keeps the established command payload. A command returns success only after a successful poll reads the requested state. This is cloud readback verification, not proof of physical actuation or a guarantee that the returned snapshot is newly generated.
+The base-station switch keeps the established command payload and always shows cloud readback state. A service returns when the cloud accepts the request. Its `command_status` attribute is then `pending`; a subsequent matching poll sets `confirmed`. The integration requests readback every two seconds for up to 30 seconds. An inconclusive timeout sets `unconfirmed` and logs a sanitized warning without aborting the automation. A later matching poll can still confirm it. POST errors reject the service. Requests are serialized, and the last accepted command supersedes earlier confirmation. Unload cancels and joins readback work. Matching cloud state does not prove physical actuation or a newly generated snapshot.
 
 ## Experimental historical body position
 
@@ -42,12 +42,14 @@ The bounded 0–9 labels are derived from that fork and have not been independen
 
 ## Optional examples
 
-The [blueprints](blueprints/automation/owlet) send Companion phone notifications. Import them manually and select the intended alert entities/phone. Initial-active notifications explicitly control startup and unavailable/unknown → on recovery; the default is off to avoid restart bursts. Recovery notifications are separate. These files do not install automations automatically. Companion device notification delivery is not tested against a real phone.
+The [blueprints](blueprints/automation/owlet) send Companion phone notifications. Import them manually and select the intended alert entities/phone. Initial-active notifications explicitly control startup and unavailable/unknown → on recovery; the alert blueprint defaults this option on so an alert appearing after unavailable/unknown still notifies. The stale-data blueprint defaults it off. Each blueprint exposes the choice. Recovery notifications are separate. These files do not install automations automatically. Companion device notification delivery is not tested against a real phone.
+
+The UI includes English, French, Ukrainian, and Dutch translations. Icon metadata is loaded by supported HA versions and ignored by HA 2024.1.2.
 
 The [English and Dutch dashboards](dashboards) are optional examples adapted from Lucas Vollebergh/idomp. Replace sample entity references with your existing entity IDs; user naming overrides and HA versions affect generated names. They require no custom cards. Copy the YAML into a manual dashboard. Their schema/text is checked, but no browser-rendering claim is made.
 
 ## Development and packaging
 
-Use Python 3.14.5 for the current test profile or Python 3.13.15 for the minimum profile. Install the corresponding hash-pinned requirements lock. Run `python -m pytest`, `ruff check custom_components tests scripts` and `ruff format --check custom_components tests scripts`. `python scripts/build_release.py` creates flat `dist/owlet.zip`, separate optional `dist/owlet-examples.zip`, and SHA256SUMS without publishing.
+Use Python 3.11.16 for HA 2024.1.2, Python 3.13.15 for HA 2024.12.5, or Python 3.14.5 for HA 2026.10.2. Install the corresponding hash-pinned requirements lock. Run `python -m pytest`, `ruff check custom_components tests scripts` and `ruff format --check custom_components tests scripts`. `python scripts/build_release.py` creates flat `dist/owlet.zip`, separate optional `dist/owlet-examples.zip`, and SHA256SUMS without publishing.
 
 [Implementation plan](docs/superintegration-plan.md), [adoption and exclusions](docs/fork-adoption.md), [decisions](docs/superintegration-decisions.tsv), and [validation evidence](docs/validation.md) are kept for parent review. No live Owlet account, installed HA instance, device or phone was changed during implementation.

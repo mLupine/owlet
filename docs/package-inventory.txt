@@ -12,6 +12,7 @@ const.py
 coordinator.py
 diagnostics.py
 entity.py
+icons.json
 manifest.json
 owletapi/LICENSE
 owletapi/__init__.py
@@ -25,4 +26,5 @@ strings.json
 switch.py
 translations/en.json
 translations/fr.json
+translations/nl.json
 translations/uk.json

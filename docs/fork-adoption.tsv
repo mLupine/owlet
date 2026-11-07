@@ -16,7 +16,7 @@ batas	2c39d927165bc777b326fe03f1ca456c9b6ae41a	See source report; metadata not u
 batas	625b6d02e7521683ca7f6c628c53414848647d61	copilot-swe-agent[bot]	overlap	Equivalent auth/error/options or flat-archive fix implemented from reviewed shared contracts; no dependency pin or unconditional token reload copied
 Rogash1	36373a3bd29758a52f5f0f2f00e58163192342fb	See source report; metadata not used for copied code	source snapshot	Live head verified by GitHub commit endpoint; selective adoption only, not a wholesale merge
 idomp	2bd5f61c1f1c12734c75cdda0f8e0873d6b52e68	idomp	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
-idomp	a0d9cc57f26d56ca740ffff59ec3982215ac9df5	Claude	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
+idomp	a0d9cc57f26d56ca740ffff59ec3982215ac9df5	Claude	adapted	Dutch UI translations reconciled to current keys; exact-source icons.json; shared ancestry credited in fork-adoption.md and NOTICE
 idomp	36c32e9623b54c1d901683ddbc85f5e033a76567	Claude	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
 idomp	bca1d854549e4b8ef9c36e33f119caa055b19ad6	See source report; metadata not used for copied code	adapted packaging concept	Final flat ZIP builder, source licenses/brand provenance and gated workflow adapted locally; donor ownership/version and intermediate broken layouts omitted
 idomp	65d6a97afe0df3cad0f4df1233a6df836a474698	See source report; metadata not used for copied code	overlap	Final feature is reconciled in fork-level adoption matrix; chronological or superseded variant is not independently imported
@@ -50,7 +50,7 @@ bypatrick-de	bb3851a9bf26c92df78d5ae705461ce6a53454c3	See source report; metadat
 bypatrick-de	16374f1c846e8189da6ceb1dcc29328cec1df634	See source report; metadata not used for copied code	adapted packaging concept	Final flat ZIP builder, source licenses/brand provenance and gated workflow adapted locally; donor ownership/version and intermediate broken layouts omitted
 bypatrick-de	dac3bcc9caa63e33bb6994a991ca7135273a38f6	See source report; metadata not used for copied code	overlap	Integrates or records already enumerated topic changes; no additional runtime feature copied
 bypatrick-de	53de2d9dc9fc9dcf9100fefb1a4ca236f6914e74	byPatrick	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
-LucasVollebergh	a0d9cc57f26d56ca740ffff59ec3982215ac9df5	Claude	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
+LucasVollebergh	a0d9cc57f26d56ca740ffff59ec3982215ac9df5	Claude	adapted	Dutch UI translations reconciled to current keys; exact-source icons.json; shared ancestry credited in fork-adoption.md and NOTICE
 LucasVollebergh	36c32e9623b54c1d901683ddbc85f5e033a76567	Claude	adapted	Source-specific adaptation; scope and attribution are described in fork-adoption.md
 LucasVollebergh	bca1d854549e4b8ef9c36e33f119caa055b19ad6	See source report; metadata not used for copied code	adapted packaging concept	Final flat ZIP builder, source licenses/brand provenance and gated workflow adapted locally; donor ownership/version and intermediate broken layouts omitted
 LucasVollebergh	65d6a97afe0df3cad0f4df1233a6df836a474698	See source report; metadata not used for copied code	overlap	Final feature is reconciled in fork-level adoption matrix; chronological or superseded variant is not independently imported
