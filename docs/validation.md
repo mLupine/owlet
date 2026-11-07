@@ -4,9 +4,9 @@ Verified 2026-11-07. All three installed Home Assistant runtimes execute the act
 
 | Home Assistant | Python | Result | Command |
 |---|---|---|---|
-| 2024.1.2 | 3.11.16 | 177 passed | `.venv-2024-1/bin/pytest -o addopts='' -q` |
-| 2024.12.5 | 3.13.15 | 177 passed | `.venv-min/bin/pytest -o addopts='' -q` |
-| 2026.10.2 | 3.14.5 | 177 passed | `.venv/bin/pytest -o addopts='' -q` |
+| 2024.1.2 | 3.11.16 | 177 passed | `.venv-2024-1/bin/python -m pytest` |
+| 2024.12.5 | 3.13.15 | 177 passed | `.venv-min/bin/python -m pytest` |
+| 2026.10.2 | 3.14.5 | 177 passed | `.venv/bin/python -m pytest` |
 
 Reproduce dependency installation with `uv pip sync --python ENV/bin/python --require-hashes LOCK`, using requirements-test-2024-1.lock, requirements-test-min.lock, or requirements-test.lock respectively.
 
@@ -14,7 +14,7 @@ Ruff check and format check passed for custom_components, tests and scripts. The
 
 Coverage includes v1 migration, v2 identity and recorder continuity, regional accounts, live options rescheduling, rotated credentials, malformed and late-arriving properties, source-specific expiry, command acceptance/delayed confirmation/timeout/unload, optional historical position, diagnostics redaction, translations and optional automations.
 
-The original independent coder and cross-family reviews identified defects subsequently fixed and covered by regressions. The consolidation owner inspected those findings against the final code; no new independent reviewer was spawned. See cross-family-review-decisions.md for dispositions and validation-history.md for earlier evidence.
+The original independent coder and cross-family reviews identified defects subsequently fixed and covered by regressions. The parent independently reran all three standard test profiles with the checked-in socket restrictions and timeout settings, verified archive members against source, and requested fresh coder and cross-family reviews of the settled implementation. Final review verdicts remain pending. See cross-family-review-decisions.md for dispositions and validation-history.md for earlier evidence.
 
 ## Packaging
 

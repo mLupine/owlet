@@ -28,7 +28,7 @@ No cloud login, device actuation, phone delivery, vendor code semantics or brows
 
 ## Recovered author evidence
 
-Source authors, committers, and source-message coauthors were inspected through live GitHub commit metadata. The exact source SHAs and human contributor credits remain in this adoption ledger, the research reports, licenses, and NOTICE. Temporary author-metadata and pending-commit preparation files were removed at the user's request. The parent owns attribution in actual commit messages.
+Source authors, committers, and source-message coauthors were inspected through live GitHub commit metadata. The exact source SHAs and human contributor credits remain in this adoption ledger, the research reports, licenses, and NOTICE. Separate author metadata and commit-preparation files were removed at the user's request. Attribution is in implementation commit 324c896 and consolidation commit 0a26786.
 
 Source-message attribution also credits kirill kulakov (kirill578) for body-position implementation and batas for the authentication adaptation. Source committers are now recorded alongside authors. Lucas Vollebergh remains explicitly credited by name and license; the inspected source committer is Claude, so a human email was not fabricated.
 
