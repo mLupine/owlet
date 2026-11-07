@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from homeassistant.const import Platform
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
 from custom_components.owlet.const import DOMAIN
@@ -66,7 +67,11 @@ async def test_cancelled_service_does_not_schedule_command_confirmation(hass, cl
 
 @pytest.mark.parametrize("cancel", [False, True])
 @pytest.mark.parametrize("partial", [False, True])
-async def test_platform_forwarding_failure_cleans_runtime(hass, cloud, cancel, partial):
+async def test_platform_forwarding_failure_cleans_runtime(
+    hass, cloud, cancel, partial, caplog
+):
+    for domain in ("sensor", "binary_sensor", "switch"):
+        assert await async_setup_component(hass, domain, {})
     entry = create_entry(hass, options={"stale_threshold": 5})
     captured = []
     original_forward = hass.config_entries.async_forward_entry_setups
@@ -86,6 +91,8 @@ async def test_platform_forwarding_failure_cleans_runtime(hass, cloud, cancel, p
     await hass.async_block_till_done()
     assert entry.entry_id not in hass.data.get(DOMAIN, {})
     assert all(coordinator._cancel_expiry is None for coordinator in captured)
+    assert "Config entry was never loaded" not in caplog.text
+    assert "Error unloading entry" not in caplog.text
     assert await hass.config_entries.async_reload(entry.entry_id)
     await hass.async_block_till_done()
     assert await hass.config_entries.async_unload(entry.entry_id)

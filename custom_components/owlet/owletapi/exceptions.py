@@ -13,7 +13,11 @@ class OwletConnectionError(OwletError):
         self.retry_after = retry_after
 
 
-class OwletPermissionError(OwletConnectionError):
+class OwletDeviceError(OwletConnectionError):
+    """A rejected device operation does not establish an account outage."""
+
+
+class OwletPermissionError(OwletDeviceError):
     """One forbidden device must not pause other devices on the account."""
 
 

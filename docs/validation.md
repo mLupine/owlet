@@ -84,3 +84,7 @@ Owner-run acceptance remains separate: preserve a private configuration/recorder
 ## Parent discovery review corrections
 
 The five new discovery regressions all fail against cf61a6c and pass with bounded workers and device-permission isolation. Full standard suites independently pass 268 tests per profile from `/Users/maciej/Code/owlet`. The frozen cross-family review still targets cf61a6c; final package hashes above predate these corrections and must be regenerated before publication.
+
+## Parent cross-family corrections
+
+All three standard profiles independently pass 277 tests after activation/device-error isolation and platform-cleanup corrections. Eleven focused cases failed against b1a7e27 before the correction; all pass afterward. Unexpected error types are observable without exception payloads. Ruff, formatting and whitespace checks pass. Earlier hashes identify the implementation handoff only, not this corrected candidate; final packages are rebuilt for review/publication.

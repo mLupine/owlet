@@ -1,6 +1,7 @@
 """The Owlet Smart Sock integration."""
 
 import asyncio
+import logging
 from inspect import signature
 
 from homeassistant.config_entries import ConfigEntry
@@ -8,6 +9,7 @@ from homeassistant.const import CONF_API_TOKEN, CONF_REGION, CONF_USERNAME, Plat
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.entity_platform import async_get_platforms
 
 from .const import (
     CONF_OWLET_EXPIRY,
@@ -27,6 +29,7 @@ from .owletapi.exceptions import (
 from .owletapi.sock import Sock
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR, Platform.SWITCH]
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -102,7 +105,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raise ConfigEntryNotReady("Unable to retrieve Owlet devices") from None
     except (ConfigEntryAuthFailed, ConfigEntryNotReady):
         raise
-    except Exception:
+    except Exception as error:
+        _LOGGER.warning("Unexpected Owlet setup error type: %s", type(error).__name__)
         raise ConfigEntryNotReady("Unexpected Owlet setup failure") from None
     finally:
         if api is not None:
@@ -125,7 +129,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         for coordinator in coordinators.values():
             await coordinator.async_close()
         await api.close()
-        await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+        loaded_platforms = {
+            platform.domain
+            for platform in async_get_platforms(hass, DOMAIN)
+            if platform.config_entry is entry
+        }
+        if loaded_platforms:
+            await hass.config_entries.async_unload_platforms(entry, loaded_platforms)
         hass.data[DOMAIN].pop(entry.entry_id, None)
         raise
     entry.async_on_unload(entry.add_update_listener(async_update_options))

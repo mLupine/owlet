@@ -325,6 +325,9 @@ async def test_unexpected_nested_errors_never_escape_to_ha_logs(
         assert errors == {"base": "unknown"}
     assert secret not in caplog.text
 
+    if path in ("setup", "poll"):
+        assert "RuntimeError" in caplog.text
+
 
 async def test_false_command_result_is_not_acceptance(hass, cloud):
     from homeassistant.exceptions import HomeAssistantError

@@ -277,7 +277,10 @@ class OwletCoordinator(DataUpdateCoordinator[None]):
             )
             self.update_interval = timedelta(seconds=delay)
             raise UpdateFailed("Unable to update Owlet readings") from None
-        except Exception:
+        except Exception as error:
+            _LOGGER.warning(
+                "Unexpected Owlet polling error type: %s", type(error).__name__
+            )
             raise UpdateFailed("Unexpected Owlet update failure") from None
         finally:
             store_tokens(self.hass, self.entry, self.sock.api.tokens)

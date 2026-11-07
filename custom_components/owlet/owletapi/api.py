@@ -16,6 +16,7 @@ from .exceptions import (
     OwletAuthenticationError,
     OwletConnectionError,
     OwletCredentialsError,
+    OwletDeviceError,
     OwletDevicesError,
     OwletEmailError,
     OwletError,
@@ -177,6 +178,7 @@ class OwletAPI:
         self.headers: dict[str, str] = {}
         self._activation_interval = activation_interval
         self._last_activation: dict[str, float] = {}
+        self._activation_retry_after: dict[str, float] = {}
         self._timeout = aiohttp.ClientTimeout(total=timeout)
 
         self._auth_lock = asyncio.Lock()
@@ -633,6 +635,7 @@ class OwletAPI:
             "POST",
             f"/dsns/{device_serial}/properties/APP_ACTIVE/datapoints.json",
             data=data,
+            record_transient_failure=False,
         )
         self._last_activation[device_serial] = time.monotonic()
 
@@ -642,6 +645,8 @@ class OwletAPI:
         force skips the interval: used when the base station reported that it
         went idle, so waiting would only lose readings.
         """
+        if time.monotonic() < self._activation_retry_after.get(device_serial, 0):
+            return
         last = self._last_activation.get(device_serial)
         if (
             not force
@@ -650,7 +655,15 @@ class OwletAPI:
             and time.monotonic() - last < self._activation_interval
         ):
             return
-        await self.activate(device_serial)
+        try:
+            await self.activate(device_serial)
+        except OwletError as error:
+            delay = max(
+                self._activation_interval, 5, getattr(error, "retry_after", 0) or 0
+            )
+            self._activation_retry_after[device_serial] = time.monotonic() + delay
+            raise
+        self._activation_retry_after.pop(device_serial, None)
 
     async def get_properties(
         self,
@@ -710,13 +723,15 @@ class OwletAPI:
         method: str,
         url: str,
         data: dict[str, Any] | None = None,
+        *,
+        record_transient_failure: bool = True,
     ) -> Any:
         """Send a request to the Owlet API and return the response."""
         if method != "GET" and not _is_allowed_write(url):
             raise OwletReadOnlyError(
                 f"Refusing {method} {url}: only {sorted(WRITABLE_PROPERTIES)} may be written"
             )
-        with self._request_budget():
+        with self._request_budget(record_transient_failure=record_transient_failure):
             await self.authenticate()
             self._check_backoff()
             rejected_token = self._auth_token
@@ -730,7 +745,8 @@ class OwletAPI:
             if reply.status == 401:
                 raise OwletAuthenticationError("Owlet API rejected the token (401)")
             self._raise_for_status(reply)
-            self._transient_failures = 0
+            if record_transient_failure:
+                self._transient_failures = 0
             return reply.body
 
     def _check_backoff(self) -> None:
@@ -756,19 +772,21 @@ class OwletAPI:
         self._request_not_before = now + delay
 
     @contextmanager
-    def _request_budget(self):
+    def _request_budget(self, *, record_transient_failure: bool = True):
         """Fail fast during shared cooldowns; never sleep while holding a lock."""
         self._check_backoff()
         try:
             yield
-        except OwletPermissionError:
+        except OwletDeviceError:
             raise
         except OwletConnectionError as error:
-            self._record_failure(error)
+            if record_transient_failure or isinstance(error, OwletRateLimitError):
+                self._record_failure(error)
             raise
         except (aiohttp.ClientError, TimeoutError):
             error = OwletConnectionError("Error connecting to Owlet")
-            self._record_failure(error)
+            if record_transient_failure:
+                self._record_failure(error)
             raise error from None
 
     @staticmethod
@@ -779,7 +797,7 @@ class OwletAPI:
         if reply.status == 403:
             raise OwletPermissionError("Owlet API denied device access (403)")
         if reply.status not in (200, 201):
-            raise OwletConnectionError(f"Owlet API returned status {reply.status}")
+            raise OwletDeviceError(f"Owlet API returned status {reply.status}")
 
     async def _send(
         self,
